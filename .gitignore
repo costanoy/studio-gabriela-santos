@@ -16,3 +16,6 @@ desktop.ini
 .idea/
 .claude/settings.local.json
 .claude/
+
+# Prévia de portfólio (gravações locais)
+portfolio-preview/
