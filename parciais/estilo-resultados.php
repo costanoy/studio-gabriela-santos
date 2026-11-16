@@ -213,6 +213,7 @@
     #footer-grid > div:first-child img { height: 130px !important; }
     #footer-menus, #footer-cursos { display: none !important; }
   }
+  .ba-alca { position:absolute; top:50%; left:50%; transform:translate(-50%,-50%); width:40px; height:40px; border-radius:50%; background:#FBF3EE; display:flex; align-items:center; justify-content:center; box-shadow:0 2px 10px rgba(58,42,34,0.35); }
   .video-play { position:absolute; top:50%; left:50%; transform:translate(-50%,-50%); width:64px; height:64px; border-radius:50%; border:none; padding:0 0 0 4px; box-sizing:border-box; background:rgba(58,42,34,0.62); display:flex; align-items:center; justify-content:center; cursor:pointer; z-index:2; box-shadow:0 2px 14px rgba(0,0,0,0.3); }
   .video-play[hidden] { display:none; }
   .video-play:hover { background:rgba(58,42,34,0.8); }
