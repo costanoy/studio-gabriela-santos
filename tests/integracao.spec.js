@@ -102,8 +102,15 @@ async function escolherArquivo(page, seletorBotao, arquivo) {
 
 function noDisco(rel) { return path.join(RAIZ, rel); }
 
+// Vídeo: converte para cor com a mesma matriz que o navegador usa (BT.709 em HD, BT.601 abaixo de 720p).
+// Sem isso o ffmpeg mede o Y cru e um vídeo HD de cores fortes parece "diferente" da capa, mesmo sendo o quadro 0.
 function cinza32(arquivo, ate) {
-  const args = ['-v', 'error', ...(ate ? ['-ss', String(ate)] : []), '-i', arquivo, '-frames:v', '1', '-vf', 'scale=32:32:flags=area,format=gray', '-f', 'rawvideo', '-'];
+  let filtro = 'scale=32:32:flags=area,format=gray';
+  if (/\.mp4$/i.test(arquivo)) {
+    const alt = Number(execFileSync('ffprobe', ['-v', 'error', '-select_streams', 'v:0', '-show_entries', 'stream=height', '-of', 'csv=p=0', arquivo]).toString().trim());
+    filtro = `scale=32:32:flags=area:in_color_matrix=${alt >= 720 ? 'bt709' : 'bt601'}:in_range=tv:out_range=pc,format=rgb24,format=gray`;
+  }
+  const args = ['-v', 'error', ...(ate ? ['-ss', String(ate)] : []), '-i', arquivo, '-frames:v', '1', '-vf', filtro, '-f', 'rawvideo', '-'];
   return execFileSync('ffmpeg', args, { maxBuffer: 1 << 20 });
 }
 function diferenca(a, b) {
@@ -165,13 +172,16 @@ test.describe('P1 ponta a ponta com o envio de verdade', () => {
     expect(html2).not.toContain(novo.depois.arquivo);
   });
 
-  test('vídeo: envia, o poster é o quadro 0, aparece no site com preload none e Desfazer tira', async ({ page, browserName }) => {
+  for (const caso of [
+    { arquivo: 'video-h264-com-local.mp4', meio: 0.6, nome: '' },
+    { arquivo: 'video-1080-em-pe.mp4', meio: 0.3, nome: ' (1080 em pé)' },
+  ]) test('vídeo' + caso.nome + ': envia, o poster é o quadro 0, aparece no site com preload none e Desfazer tira', async ({ page, browserName }) => {
     test.skip(browserName !== 'chromium', 'o WebKit do Playwright no Windows não toca H.264, então a capa não sai; vale a checagem manual no iPhone (PUBLICACAO.md)');
     await entrar(page);
     await page.click('#cartao-resultados');
     await page.click('#novo-video');
     await page.locator('[data-caminho="titulo"] input').fill('Vídeo de ponta a ponta');
-    await escolherArquivo(page, '#escolher-video', path.join(FIX, 'video-h264-com-local.mp4'));
+    await escolherArquivo(page, '#escolher-video', path.join(FIX, caso.arquivo));
     // o painel mostra a capa e pede para confirmar antes de gastar internet
     await page.getByRole('button', { name: 'Enviar este vídeo' }).click();
     await expect(page.locator('#escolher-video')).toHaveText(/Trocar/, { timeout: 60000 });
@@ -193,7 +203,7 @@ test.describe('P1 ponta a ponta com o envio de verdade', () => {
     // poster = primeiro quadro do vídeo, e não um quadro do meio
     const poster = cinza32(noDisco(v.poster));
     const d0 = diferenca(poster, cinza32(noDisco(v.arquivo)));
-    const dm = diferenca(poster, cinza32(noDisco(v.arquivo), 0.6));
+    const dm = diferenca(poster, cinza32(noDisco(v.arquivo), caso.meio));
     expect(d0, 'diferença para o quadro 0').toBeLessThanOrEqual(5);
     expect(dm, 'a capa não é um quadro do meio').toBeGreaterThan(d0);
 
