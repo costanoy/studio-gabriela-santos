@@ -49,6 +49,7 @@ p { margin: 0 0 12px; }
 .botao-perigo { background: var(--erro); border-color: var(--erro); color: #fff; }
 .botao[disabled] { opacity: .5; cursor: not-allowed; }
 .botao-bloco { display: flex; width: 100%; }
+.botao-apagar { color: var(--erro); border-color: var(--erro); background: #fff; }
 
 /* Campos */
 label, .rotulo { display: block; font-weight: 700; margin: 14px 0 4px; }

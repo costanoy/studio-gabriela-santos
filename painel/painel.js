@@ -296,7 +296,7 @@
 
   var salvando = false;
   /** Grava no servidor. Resolve com a resposta. Trata erros e mostra o aviso "Salvo no site". */
-  function salvar() {
+  function salvar(textoToast) {
     if (salvando) return Promise.resolve({ ok: false });
     var locais = validarLocal();
     if (locais.length) {
@@ -318,7 +318,7 @@
         avisoTopo(null);
         // Desfazer: volta para a versão que estava no site um instante antes (a 0 é o conteúdo original)
         var anterior = r.revisao - 1;
-        toast('Salvo no site.', { texto: 'Desfazer', fazer: function () { restaurarVersao(anterior, 'Desfeito. O site voltou ao que estava antes.'); } }, 10);
+        toast(typeof textoToast === 'string' ? textoToast : 'Salvo no site.', { texto: 'Desfazer', fazer: function () { restaurarVersao(anterior, 'Desfeito. O site voltou ao que estava antes.'); } }, 10);
         return r;
       }
       if (r.status === 422) {
@@ -799,7 +799,8 @@
           h('div', { class: 'linha-botoes' },
             h('button', { class: 'botao', type: 'button', text: 'Editar', attrs: { 'aria-label': 'Editar ' + nomeItem(item) }, on: { click: function () { ir('item', { id: item.id, lado: 'depois' }); } } }),
             S.aba !== 'fora' && n > 0 ? botaoPequeno('↑ Subir', function () { mover(item, -1); }, 'Subir ' + nomeItem(item)) : null,
-            S.aba !== 'fora' && n < lista.length - 1 ? botaoPequeno('↓ Descer', function () { mover(item, 1); }, 'Descer ' + nomeItem(item)) : null)));
+            S.aba !== 'fora' && n < lista.length - 1 ? botaoPequeno('↓ Descer', function () { mover(item, 1); }, 'Descer ' + nomeItem(item)) : null,
+            h('button', { class: 'botao botao-apagar', type: 'button', text: 'Apagar', attrs: { 'aria-label': 'Apagar ' + nomeItem(item) }, on: { click: function () { apagarItem(item); } } }))));
       caixa.appendChild(linha);
     });
     corpo.appendChild(caixa);
@@ -1144,6 +1145,8 @@
       } } }));
       corpo.appendChild(progresso);
     }
+    corpo.appendChild(h('h2', { text: 'Apagar' }));
+    corpo.appendChild(h('button', { class: 'botao botao-apagar botao-bloco', type: 'button', id: 'apagar-item', text: 'Apagar ' + (comp ? 'este antes e depois' : item.tipo === 'video' ? 'este vídeo' : 'esta foto'), on: { click: function () { apagarItem(item); } } }));
     raiz.appendChild(corpo);
     raiz.appendChild(barraAcao('Salvar no site'));
   };
@@ -1238,6 +1241,76 @@
     });
   };
   CARTOES.push({ id: 'cartao-versoes', icone: '🕘', titulo: 'Versões', texto: 'Voltar para como o site estava antes', ir: function () { ir('versoes'); } });
+
+  // ---------------------------------------------------------------------------
+  // Apagar (P3) e lixeira
+  // ---------------------------------------------------------------------------
+  /** Pede confirmação com o nome, tira do site e salva. O aviso Desfazer dura 10 segundos. */
+  function apagarItem(item) {
+    var nome = nomeItem(item);
+    return confirmar({
+      titulo: 'Apagar "' + nome + '"?',
+      texto: 'Ele deixa de aparecer no site. Logo depois de apagar, você pode desfazer.',
+      ok: 'Apagar',
+      perigo: true
+    }).then(function (sim) {
+      if (!sim) return null;
+      var lista = itensRes();
+      var pos = lista.indexOf(item);
+      if (pos < 0) return null;
+      lista.splice(pos, 1);
+      S.resumo.push('Apagou ' + nome);
+      return salvar('"' + nome + '" foi apagado do site.').then(function (r) {
+        if (r && r.ok) {
+          S.tela = 'resultados';
+          S.arg = null;
+          desenhar();
+          window.scrollTo(0, 0);
+        } else {
+          lista.splice(pos, 0, item);
+          S.resumo.pop();
+        }
+        return r;
+      });
+    });
+  }
+
+  function tamanhoLegivel(b) {
+    if (b >= 1048576) return (Math.round(b / 104857.6) / 10).toString().replace('.', ',') + ' MB';
+    return Math.max(1, Math.round(b / 1024)) + ' KB';
+  }
+
+  TELAS.lixeira = function (raiz) {
+    raiz.appendChild(topo('Lixeira', 'home'));
+    var corpo = h('main', { id: 'conteudo-tela' });
+    corpo.appendChild(h('p', { class: 'dica', text: 'Aqui ficam por 30 dias as fotos e vídeos que saíram das versões guardadas. Toque em Restaurar para trazer de volta.' }));
+    var lista = h('div', { id: 'lista-lixeira' }, h('p', { class: 'carregando', text: 'Carregando…' }));
+    corpo.appendChild(lista);
+    raiz.appendChild(corpo);
+    api('lixeira').then(function (r) {
+      limpar(lista);
+      if (!r.ok) { lista.appendChild(alerta(mensagemErro(r))); return; }
+      if (!r.itens.length) { lista.appendChild(h('p', { class: 'vazio', text: 'A lixeira está vazia.' })); return; }
+      r.itens.forEach(function (m) {
+        var quandoTxt = quando(m.data);
+        lista.appendChild(h('div', { class: 'linha-res lixo', attrs: { 'data-id': m.id } },
+          h('div', { class: 'linha-res-corpo' },
+            h('strong', { text: m.nome || 'Arquivo' }),
+            h('span', { class: 'dica', text: (quandoTxt ? 'Saiu em ' + quandoTxt + ' · ' : '') + tamanhoLegivel(m.tamanho) }),
+            h('div', { class: 'linha-botoes' },
+              h('button', { class: 'botao', type: 'button', text: 'Restaurar', attrs: { 'aria-label': 'Restaurar ' + (m.nome || 'arquivo') }, on: { click: function (ev) {
+                var b = ev.currentTarget;
+                b.disabled = true;
+                api('lixeira_restaurar', { id: m.id }).then(function (rr) {
+                  if (rr.ok) { toast('Pronto. O arquivo voltou.'); desenhar(); return; }
+                  b.disabled = false;
+                  toast(mensagemErro(rr));
+                });
+              } } })))));
+      });
+    });
+  };
+  CARTOES.push({ id: 'cartao-lixeira', icone: '🗑️', titulo: 'Lixeira', texto: 'Trazer de volta fotos e vídeos', ir: function () { ir('lixeira'); } });
 
   /*@@TELAS*/
 

@@ -581,4 +581,81 @@ test.describe('L13 versões e Desfazer', () => {
   });
 });
 
+// ===========================================================================
+// P3: apagar com confirmação e lixeira
+// ===========================================================================
+test.describe('P3 apagar e lixeira', () => {
+  test('apagar pede confirmação com o nome, tira do site e dá para desfazer', async ({ page }) => {
+    await entrar(page);
+    const antes = (await chamar(page, { acao: 'ler' })).conteudo.resultados.itens;
+    await page.click('#cartao-resultados');
+    const linha = page.locator('#lista-resultados .linha-res').first();
+    const id = await linha.getAttribute('data-id');
+    const nome = await linha.locator('strong').innerText();
+    await linha.getByRole('button', { name: /^Apagar/ }).click();
+    await expect(page.locator('.modal')).toContainText(nome);
+    await page.click('#modal-cancelar');
+    expect((await chamar(page, { acao: 'ler' })).conteudo.resultados.itens.length).toBe(antes.length);
+
+    await linha.getByRole('button', { name: /^Apagar/ }).click();
+    await page.click('#modal-ok');
+    await expect(page.locator('.toast')).toContainText('foi apagado');
+    await expect(page.locator('.linha-res[data-id="' + id + '"]')).toHaveCount(0);
+    let depois = (await chamar(page, { acao: 'ler' })).conteudo.resultados.itens;
+    expect(depois.length).toBe(antes.length - 1);
+    expect(depois.some((i) => i.id === id)).toBe(false);
+
+    await page.locator('.toast').getByRole('button', { name: 'Desfazer' }).click();
+    await expect(page.locator('.toast')).toContainText('Desfeito');
+    depois = (await chamar(page, { acao: 'ler' })).conteudo.resultados.itens;
+    expect(depois.length).toBe(antes.length);
+    expect(depois.some((i) => i.id === id)).toBe(true);
+  });
+
+  test('apagar pela tela de edição volta para a lista', async ({ page }) => {
+    await entrar(page);
+    await page.click('#cartao-resultados');
+    const id = await page.locator('#lista-resultados .linha-res').first().getAttribute('data-id');
+    await page.click('#topo-voltar, header.topo .botao');
+    await abrirItem(page, id);
+    await page.click('#apagar-item');
+    await page.click('#modal-ok');
+    await expect(page.locator('#lista-resultados')).toBeVisible();
+    await expect(page.locator('.linha-res[data-id="' + id + '"]')).toHaveCount(0);
+  });
+
+  test('a lixeira lista o arquivo e Restaurar traz de volta', async ({ page }) => {
+    const pasta = path.join(__dirname, '..', 'conteudo', 'midia');
+    const arquivo = path.join(pasta, 'lixeira-teste.jpg');
+    fs.mkdirSync(pasta, { recursive: true });
+    fs.copyFileSync(path.join(__dirname, '..', 'assets', 'results', 'drenagem-antes1.jpeg'), arquivo);
+    try {
+      await entrar(page);
+      const trocar = async (arq, rev) => {
+        const lido = await chamar(page, { acao: 'ler' });
+        lido.conteudo.resultados.itens.find((x) => x.id === 'foto-ultrassom-1').arquivo = arq;
+        return chamar(page, { acao: 'salvar', conteudo: lido.conteudo, revisao: rev, resumo: 'Trocou a foto' });
+      };
+      let r = await trocar('conteudo/midia/lixeira-teste.jpg', 0);
+      r = await trocar('assets/results/ultrassom-antes1.jpeg', r.revisao);
+      for (let i = 0; i < 19; i++) {
+        r = await salvarTitulo(page, 'X' + i, r.revisao);
+        expect(r.ok).toBe(true);
+      }
+      expect(fs.existsSync(arquivo)).toBe(false);
+      await page.reload();
+      await page.click('#cartao-lixeira');
+      const linha = page.locator('#lista-lixeira .linha-res');
+      await expect(linha).toHaveCount(1);
+      await expect(linha).toContainText('lixeira-teste.jpg');
+      await linha.getByRole('button', { name: /Restaurar/ }).click();
+      await expect(page.locator('.toast')).toContainText('voltou');
+      await expect(page.locator('#lista-lixeira')).toContainText('vazia');
+      expect(fs.existsSync(arquivo)).toBe(true);
+    } finally {
+      fs.rmSync(arquivo, { force: true });
+    }
+  });
+});
+
 // @@FIM
