@@ -13,13 +13,13 @@ module.exports = defineConfig({
   reporter: [['list'], ['json', { outputFile: '.auditoria/playwright-resultados.json' }]],
   use: { baseURL: `http://localhost:${PORTA}`, trace: 'off' },
   webServer: { command: 'npm run previa', url: `http://localhost:${PORTA}/`, reuseExistingServer: true, timeout: 30000 },
-  // Os testes do painel gravam no conteúdo da prévia; rodam depois dos do site para não se misturarem.
+  // Os testes do painel (painel.spec e integracao.spec) gravam no conteúdo da prévia; rodam depois dos do site para não se misturarem.
   projects: [
-    { name: 'desktop', testIgnore: /painel\.spec/, use: { ...APARELHOS.desktop } },
-    { name: 'iphone-webkit', testIgnore: /painel\.spec/, use: { ...APARELHOS['iphone-webkit'] } },
-    { name: 'iphone-chromium', testIgnore: /painel\.spec/, use: { ...APARELHOS['iphone-chromium'] } },
+    { name: 'desktop', testIgnore: /(painel|integracao)\.spec/, use: { ...APARELHOS.desktop } },
+    { name: 'iphone-webkit', testIgnore: /(painel|integracao)\.spec/, use: { ...APARELHOS['iphone-webkit'] } },
+    { name: 'iphone-chromium', testIgnore: /(painel|integracao)\.spec/, use: { ...APARELHOS['iphone-chromium'] } },
     ...Object.keys(APARELHOS).map((n) => ({
-      name: 'painel-' + n, testMatch: /painel\.spec/, use: { ...APARELHOS[n] },
+      name: 'painel-' + n, testMatch: /(painel|integracao)\.spec/, use: { ...APARELHOS[n] },
       dependencies: ['desktop', 'iphone-webkit', 'iphone-chromium'],
     })),
   ],
