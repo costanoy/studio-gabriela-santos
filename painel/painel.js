@@ -40,6 +40,24 @@
   // ---------------------------------------------------------------------------
   // Página de entrada (login): só um enfeite para mostrar/esconder a senha
   // ---------------------------------------------------------------------------
+  // Rascunho local: guarda o que ela mexeu se a sessão acabar (só neste aparelho)
+  var CHAVE_RASC = 'painel-rascunho';
+  function rascunhoLer() {
+    try {
+      var t = window.localStorage.getItem(CHAVE_RASC);
+      var d = t ? JSON.parse(t) : null;
+      return d && typeof d === 'object' && d.c && typeof d.c === 'object' ? d : null;
+    } catch (e) { return null; }
+  }
+  function rascunhoGravar(d) {
+    try { window.localStorage.setItem(CHAVE_RASC, JSON.stringify(d)); return true; } catch (e) { return false; }
+  }
+  function rascunhoApagar() {
+    try { window.localStorage.removeItem(CHAVE_RASC); } catch (e) { /* sem armazenamento: nada a apagar */ }
+  }
+  var avisoRasc = document.getElementById('aviso-rascunho');
+  if (avisoRasc && rascunhoLer()) avisoRasc.hidden = false;
+
   var verSenha = document.getElementById('ver-senha');
   if (verSenha) {
     verSenha.addEventListener('click', function () {
@@ -184,6 +202,23 @@
     raiz.appendChild(h('header', { class: 'topo' },
       h('h1', { text: 'Painel do site' }),
       h('button', { class: 'botao', type: 'button', id: 'sair', text: 'Sair', on: { click: sair } })));
+    var rasc = rascunhoLer();
+    if (rasc) {
+      var difere = rasc.rev !== S.rev;
+      raiz.appendChild(h('div', { class: 'alerta aviso', id: 'oferta-rascunho', attrs: { role: 'alert' } },
+        h('span', { class: 'alerta-icone', text: '!', attrs: { 'aria-hidden': 'true' } }),
+        h('div', { class: 'alerta-corpo' },
+          h('span', { text: 'Você tem mudanças guardadas de antes' + (rasc.quando ? ' (' + quando(rasc.quando) + ')' : '') + '. Quer continuar de onde parou?' + (difere ? ' O site foi alterado desde então: ao salvar, suas mudanças guardadas vão substituir o que está no site.' : '') }),
+          h('div', { class: 'linha-botoes' },
+            h('button', { class: 'botao botao-principal', type: 'button', id: 'rascunho-recuperar', text: 'Recuperar mudanças', on: { click: function () {
+              S.c = rasc.c;
+              S.sujo = true;
+              S.resumo = ['Recuperou mudanças guardadas'];
+              rascunhoApagar();
+              ir(rasc.tela === 'resultados' ? 'resultados' : 'textos');
+            } } }),
+            h('button', { class: 'botao', type: 'button', id: 'rascunho-descartar', text: 'Descartar', on: { click: function () { rascunhoApagar(); desenhar(); } } })))));
+    }
     raiz.appendChild(h('p', { class: 'dica', text: 'O que você quer fazer?' }));
     var grade = h('div', { class: 'cartoes' });
     CARTOES.forEach(function (c) {
@@ -316,6 +351,7 @@
         S.resumo = [];
         atualizarBarra();
         avisoTopo(null);
+        rascunhoApagar();
         // Desfazer: volta para a versão que estava no site um instante antes (a 0 é o conteúdo original)
         var anterior = r.revisao - 1;
         toast(typeof textoToast === 'string' ? textoToast : 'Salvo no site.', { texto: 'Desfazer', fazer: function () { restaurarVersao(anterior, 'Desfeito. O site voltou ao que estava antes.'); } }, 10);
@@ -326,18 +362,38 @@
         avisoTopo(soltos.length ? soltos.join(' ') : MSG.invalido);
         return r;
       }
+      if (r.status === 401 || r.sessao === false) {
+        // A sessão acabou: guarda o que ela mexeu neste aparelho e pede para entrar de novo
+        rascunhoGravar({ c: S.c, rev: S.rev, tela: S.tela, quando: new Date().toISOString() });
+        avisoTopo(MSG.sessao, h('button', { class: 'botao', type: 'button', id: 'entrar-de-novo', text: 'Entrar de novo', on: { click: function () { location.reload(); } } }));
+        return r;
+      }
+      if (r.status === 409) {
+        avisoTopo(MSG.conflito, h('button', { class: 'botao', type: 'button', id: 'carregar-nova', text: 'Carregar a versão nova', on: { click: function () {
+          carregar().then(function (ok) {
+            if (!ok) return;
+            S.sujo = false;
+            S.resumo = [];
+            S.tela = 'home';
+            S.arg = null;
+            desenhar();
+            toast('Pronto. Você está vendo a versão mais nova do site.');
+          });
+        } } }));
+        return r;
+      }
       avisoTopo(mensagemErro(r));
       return r;
     });
   }
 
-  /** Faixa de aviso fixa no alto da tela de edição. null apaga. */
-  function avisoTopo(texto) {
+  /** Faixa de aviso fixa no alto da tela de edição. null apaga. extra = botão opcional. */
+  function avisoTopo(texto, extra) {
     var velho = document.getElementById('aviso-topo');
     if (velho) velho.parentNode.removeChild(velho);
     if (!texto) return;
     var pai = document.getElementById('conteudo-tela') || app;
-    var el = alerta(texto);
+    var el = alerta(texto, null, extra);
     el.id = 'aviso-topo';
     pai.insertBefore(el, pai.firstChild);
     el.scrollIntoView({ block: 'nearest' });

@@ -658,4 +658,72 @@ test.describe('P3 apagar e lixeira', () => {
   });
 });
 
+// ===========================================================================
+// L14: aviso de outra tela (409) e rascunho local
+// ===========================================================================
+test.describe('L14 conflito e rascunho', () => {
+  test('salvar depois de o site mudar em outra tela mostra o aviso e carrega a versão nova', async ({ page, context }) => {
+    await entrar(page);
+    const outra = await context.newPage();
+    await outra.goto('/painel/');
+    await expect(outra.locator('#sair')).toBeVisible();
+    await outra.click('#cartao-textos');
+    const det2 = await abrirGrupo(outra, 'topo');
+    await det2.locator('[data-caminho="home.hero.titulo"] input').fill('Título da outra tela');
+    await outra.click('#salvar');
+    await expect(outra.locator('.toast')).toContainText('Salvo no site');
+
+    await page.click('#cartao-textos');
+    const det = await abrirGrupo(page, 'topo');
+    await det.locator('[data-caminho="home.hero.titulo"] input').fill('Título da primeira tela');
+    await page.click('#salvar');
+    await expect(page.locator('#aviso-topo')).toContainText('O site foi alterado em outra tela');
+    expect((await chamar(page, { acao: 'ler' })).conteudo.home.hero.titulo).toBe('Título da outra tela');
+    await page.click('#carregar-nova');
+    await expect(page.locator('.toast')).toContainText('versão mais nova');
+    await page.click('#cartao-textos');
+    const det3 = await abrirGrupo(page, 'topo');
+    await expect(det3.locator('[data-caminho="home.hero.titulo"] input')).toHaveValue('Título da outra tela');
+    await outra.close();
+  });
+
+  test('sessão expirada guarda rascunho e oferece de volta depois de entrar', async ({ page, context }) => {
+    await entrar(page);
+    await page.click('#cartao-textos');
+    const det = await abrirGrupo(page, 'topo');
+    await det.locator('[data-caminho="home.hero.titulo"] input').fill('Meu texto guardado');
+    await context.clearCookies();
+    await page.click('#salvar');
+    await expect(page.locator('#aviso-topo')).toContainText('entre de novo');
+    await expect(page.locator('#entrar-de-novo')).toBeVisible();
+    expect(await page.evaluate(() => window.localStorage.getItem('painel-rascunho'))).toContain('Meu texto guardado');
+
+    await page.click('#entrar-de-novo');
+    await expect(page.locator('#aviso-rascunho')).toBeVisible();
+    await page.fill('#senha', SENHA);
+    await page.click('button[type=submit]');
+    await expect(page.locator('#oferta-rascunho')).toBeVisible();
+    await page.click('#rascunho-recuperar');
+    const det2 = await abrirGrupo(page, 'topo');
+    await expect(det2.locator('[data-caminho="home.hero.titulo"] input')).toHaveValue('Meu texto guardado');
+    await page.click('#salvar');
+    await expect(page.locator('.toast')).toContainText('Salvo no site');
+    expect((await chamar(page, { acao: 'ler' })).conteudo.home.hero.titulo).toBe('Meu texto guardado');
+    expect(await page.evaluate(() => window.localStorage.getItem('painel-rascunho'))).toBeNull();
+  });
+
+  test('descartar o rascunho apaga o que estava guardado', async ({ page }) => {
+    await entrar(page);
+    await page.evaluate(() => {
+      const c = { home: {}, resultados: { itens: [] } };
+      window.localStorage.setItem('painel-rascunho', JSON.stringify({ c, rev: 0, tela: 'textos', quando: new Date().toISOString() }));
+    });
+    await page.reload();
+    await expect(page.locator('#oferta-rascunho')).toBeVisible();
+    await page.click('#rascunho-descartar');
+    await expect(page.locator('#oferta-rascunho')).toHaveCount(0);
+    expect(await page.evaluate(() => window.localStorage.getItem('painel-rascunho'))).toBeNull();
+  });
+});
+
 // @@FIM
