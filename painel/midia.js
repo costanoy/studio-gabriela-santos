@@ -54,7 +54,7 @@
       return 'Este vídeo tem ' + (d && d.tamanho_mb ? d.tamanho_mb + ' MB' : 'muitos MB') + ' e o limite é ' +
         ((d && d.limite_mb) || LIMITE_VIDEO_MB) + ' MB. No app Fotos, toque em Editar e corte o começo ou o fim. Depois tente de novo.';
     },
-    video_formato: 'Este vídeo não está num formato que o site aceita. Envie um vídeo MP4 ou MOV gravado pela câmera do celular.',
+    video_formato: 'Este vídeo não está num formato que o site aceita. Envie um vídeo gravado pela câmera do celular.',
     video_codec: 'Este vídeo está num formato que o site não toca. Grave de novo com a câmera do celular, em Ajustes → Câmera → Formatos → Mais compatível.',
     video_ilegivel: 'Não consegui ler este vídeo. Ele pode estar estragado. Escolha outro ou grave de novo.',
     rede: 'A internet caiu no meio do envio. Nada foi mudado no site. Toque em "Tentar de novo".',
@@ -336,8 +336,207 @@
     });
   }
 
-  function escolherVideo() {
-    return Promise.reject(erro('gravacao'));
+  /* ------------------------------------------------------------------ vídeo */
+
+  var LADO_CAPA = 1280;
+
+  /**
+   * Capa do vídeo = o PRIMEIRO quadro (tempo 0). Isso evita a tela preta do iPhone antes do play.
+   * Devolve {blob, largura, altura, duracao}. Se o navegador não consegue decodificar o vídeo, rejeita.
+   */
+  function capaDoVideo(file) {
+    return new Promise(function (resolve, reject) {
+      var url = URL.createObjectURL(file);
+      var v = document.createElement('video');
+      var acabou = false;
+      var fim = function (fn, valor) {
+        if (acabou) { return; }
+        acabou = true;
+        clearTimeout(limite);
+        v.removeAttribute('src');
+        try { v.load(); } catch (e) { /* sem problema */ }
+        URL.revokeObjectURL(url);
+        fn(valor);
+      };
+      var limite = setTimeout(function () { fim(reject, new Error('tempo')); }, 20000);
+      v.muted = true;
+      v.defaultMuted = true;
+      v.playsInline = true;
+      v.setAttribute('playsinline', '');
+      v.preload = 'auto';
+      v.addEventListener('error', function () { fim(reject, new Error('decodificar')); });
+      v.addEventListener('loadeddata', function () {
+        try {
+          var w = v.videoWidth, h = v.videoHeight;
+          if (!w || !h) { throw new Error('vazio'); }
+          var duracao = isFinite(v.duration) ? v.duration : 0;
+          var esc = Math.min(1, LADO_CAPA / Math.max(w, h));
+          var c = document.createElement('canvas');
+          c.width = Math.max(1, Math.round(w * esc));
+          c.height = Math.max(1, Math.round(h * esc));
+          c.getContext('2d').drawImage(v, 0, 0, c.width, c.height);
+          c.toBlob(function (b) {
+            if (b) { fim(resolve, { blob: b, largura: w, altura: h, duracao: duracao }); } else { fim(reject, new Error('canvas')); }
+          }, 'image/jpeg', 0.88);
+        } catch (e) { fim(reject, e); }
+      });
+      v.src = url;
+    });
+  }
+
+  function minutos(seg) {
+    if (!seg || !isFinite(seg)) { return ''; }
+    var s = Math.round(seg);
+    return Math.floor(s / 60) + ':' + ('0' + (s % 60)).slice(-2);
+  }
+
+  function chaveRetomada(f) { return 'pm-envio:' + [f.name, f.size, f.lastModified].join('|'); }
+  function lembrar(f, id) {
+    try { if (id) { localStorage.setItem(chaveRetomada(f), id); } else { localStorage.removeItem(chaveRetomada(f)); } } catch (e) { /* sem armazenamento */ }
+  }
+  function lembrado(f) {
+    try { return localStorage.getItem(chaveRetomada(f)) || ''; } catch (e) { return ''; }
+  }
+
+  /**
+   * Manda o vídeo em partes. `est` guarda {envio, parte, total, recebidas}. Cada chamada continua de onde parou,
+   * então "Tentar de novo" depois de uma queda só manda o que falta.
+   */
+  function enviarPartes(file, op, est, ctl, mostrar) {
+    var feitas = {};
+    (est.recebidas || []).forEach(function (i) { feitas[i] = true; });
+    var bytesFeitos = 0;
+    Object.keys(feitas).forEach(function (i) { bytesFeitos += Math.min(est.parte, file.size - i * est.parte); });
+    var i = 0;
+    function proxima() {
+      while (i < est.total && feitas[i]) { i++; }
+      if (i >= est.total) { return Promise.resolve(); }
+      if (ctl.cancelado) { return Promise.reject(erro('cancelado')); }
+      var idx = i;
+      var ini = idx * est.parte;
+      var pedaco = file.slice(ini, Math.min(file.size, ini + est.parte));
+      return chamar(op, { acao: 'video_parte', envio: est.envio, indice: String(idx), arquivo: { blob: pedaco, nome: 'parte.bin' } }, ctl, function (env) {
+        mostrar(bytesFeitos + env, file.size);
+      }).then(function () {
+        feitas[idx] = true;
+        bytesFeitos += pedaco.size;
+        mostrar(bytesFeitos, file.size);
+        return proxima();
+      });
+    }
+    return proxima();
+  }
+
+  function escolherVideo(op) {
+    op = op || {};
+    return pedirArquivo('video/mp4,video/quicktime,video/*', op).then(function (file) {
+      if (!/^video\//i.test(file.type || '') && !/\.(mp4|mov|m4v)$/i.test(file.name || '')) { throw erro('tipo'); }
+      if (file.size > LIMITE_VIDEO_MB * 1048576) { throw erro('video_pesado', { tamanho_mb: mb(file.size), limite_mb: LIMITE_VIDEO_MB }); }
+
+      var janela = abrirJanela('Seu vídeo');
+      var ctl = { xhr: null, cancelado: false };
+      var envio = null;
+      var sair = function (e) { janela.fechar(); throw e; };
+      var cancelarTudo = function () {
+        ctl.cancelado = true;
+        if (ctl.xhr) { ctl.xhr.abort(); }
+      };
+      janela.texto('Abrindo o vídeo…');
+      janela.botoes([{ rotulo: 'Cancelar', acao: cancelarTudo }]);
+
+      return capaDoVideo(file).then(function (c) { return c; }, function () { return null; }).then(function (capa) {
+        if (ctl.cancelado) { throw erro('cancelado'); }
+        // 1. Prévia: capa, duração e tamanho. A pessoa confirma antes de gastar internet.
+        var previa = capa ? URL.createObjectURL(capa.blob) : '';
+        janela.capa(previa);
+        var partes = [mb(file.size) + ' MB'];
+        if (capa && capa.duracao) { partes.unshift(minutos(capa.duracao)); }
+        janela.texto(partes.join(' · '));
+        var confirmar = op.semConfirmar ? Promise.resolve() : new Promise(function (ok, no) {
+          janela.botoes([
+            { rotulo: 'Enviar este vídeo', principal: true, acao: function () { ok(); } },
+            { rotulo: 'Cancelar', acao: function () { no(erro('cancelado')); } }
+          ]);
+        });
+        return confirmar.then(function () { return capa; });
+      }).then(function (capa) {
+        // 2. Envio em partes, com "Tentar de novo" que continua de onde parou
+        var texto = 'Enviando o vídeo…';
+        var mostrar = function (env, tot) {
+          var p = tot ? Math.floor(env * 100 / tot) : 0;
+          janela.barra(p);
+          janela.texto(texto + ' ' + p + '%');
+          notificar(op, { etapa: 'video', enviado: env, total: tot, percentual: p, texto: texto });
+        };
+        janela.erro('');
+        janela.barra(0);
+        janela.botoes([{ rotulo: 'Cancelar', acao: cancelarTudo }]);
+
+        function comecar() {
+          var salvo = lembrado(file);
+          var tentarSalvo = salvo ? chamar(op, { acao: 'video_estado', envio: salvo }, ctl).then(function (j) { return j; }, function (e) {
+            if (e.codigo === 'rede' || e.codigo === 'cancelado') { throw e; }
+            lembrar(file, '');
+            return null;
+          }) : Promise.resolve(null);
+          return tentarSalvo.then(function (j) {
+            if (j) { return j; }
+            return chamar(op, { acao: 'video_iniciar', tamanho: String(file.size), nome: file.name || 'video.mp4' }, ctl).then(function (r) {
+              lembrar(file, r.envio);
+              return { envio: r.envio, parte: r.parte, total: r.total, recebidas: [] };
+            });
+          });
+        }
+
+        function tentar() {
+          janela.erro('');
+          janela.botoes([{ rotulo: 'Cancelar', acao: cancelarTudo }]);
+          return comecar().then(function (est) {
+            envio = est.envio;
+            return enviarPartes(file, op, est, ctl, mostrar);
+          }).then(function () {
+            texto = 'Finalizando o vídeo…';
+            janela.barra(null);
+            janela.texto(texto);
+            return chamar(op, { acao: 'video_concluir', envio: envio }, ctl);
+          }).catch(function (e) {
+            if (e.codigo === 'cancelado' || ctl.cancelado) { throw erro('cancelado'); }
+            var recuperavel = e.codigo === 'rede' || e.codigo === 'parte_invalida' || e.codigo === 'partes_faltando';
+            if (!recuperavel) { throw e; }
+            // Fica na tela esperando a pessoa tocar em "Tentar de novo"
+            return new Promise(function (ok, no) {
+              janela.erro(e.message);
+              janela.botoes([
+                { rotulo: 'Tentar de novo', principal: true, acao: function () { tentar().then(ok, no); } },
+                { rotulo: 'Cancelar', acao: function () { no(erro('cancelado')); } }
+              ]);
+            });
+          });
+        }
+
+        return tentar().then(function (j) {
+          lembrar(file, '');
+          // 3. Capa (primeiro quadro)
+          if (!capa) { throw erro('poster_falhou'); }
+          janela.texto('Guardando a capa…');
+          return chamar(op, { acao: 'poster', arquivo: { blob: capa.blob, nome: 'capa.jpg' } }, ctl).then(function (p) {
+            return { arquivo: j.arquivo, poster: p.arquivo, largura: j.largura, altura: j.altura, duracao: j.duracao };
+          }, function (e) { throw e.codigo === 'rede' ? erro('poster_falhou') : e; });
+        });
+      }).then(function (r) {
+        janela.fechar();
+        return r;
+      }, function (e) {
+        if (envio && (e.codigo === 'cancelado' || e.codigo === 'rede')) {
+          // Cancelar apaga as partes; queda de rede deixa para retomar depois
+          if (e.codigo === 'cancelado') {
+            lembrar(file, '');
+            try { chamar(op, { acao: 'video_cancelar', envio: envio }, null).catch(function () { /* melhor esforço */ }); } catch (x) { /* ok */ }
+          }
+        }
+        return sair(e);
+      });
+    });
   }
 
   window.PainelMidia = {
