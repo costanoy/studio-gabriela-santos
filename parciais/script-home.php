@@ -39,12 +39,6 @@ function scrollByCard(gridId, dir) {
     __carouselIdx[gridId] = idx;
   }, { passive: true });
 });
-(function () {
-  const v = document.getElementById('apresentacao-video');
-  if (v) v.addEventListener('loadedmetadata', () => {
-    if (v.videoWidth && v.videoHeight) v.style.aspectRatio = v.videoWidth + '/' + v.videoHeight;
-  });
-})();
 function toggleCurso(id, btn) {
   const el = document.getElementById(id);
   const open = el.style.display === 'grid';

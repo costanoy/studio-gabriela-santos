@@ -78,7 +78,8 @@ parcial('estilo-home');
       <p style="font-size:20px; font-weight:700; color:#996C55; margin:0; display:flex; align-items:center; gap:8px;"><?= e($h['sobre']['saiba_mais']) ?> <span id="saiba-arrow" style="display:inline-flex; align-items:center;">→</span></p>
     </div>
     <div style="width:100%; position:relative; display:flex; justify-content:center;">
-      <video id="apresentacao-video" src="<?= e(url_midia($h['sobre']['video']['arquivo'])) ?>" controls="" playsinline="" preload="metadata" poster="<?= e(url_midia($h['sobre']['video']['poster'])) ?>" style="max-width:100%; max-height:480px; width:auto; aspect-ratio: 2/3; object-fit:cover; border-radius:20px; display:block; background:#000;"></video>
+<?php $vl = (int) ($h['sobre']['video']['largura'] ?? 0) ?: 576; $va = (int) ($h['sobre']['video']['altura'] ?? 0) ?: 1024; ?>
+      <video id="apresentacao-video" src="<?= e(url_midia($h['sobre']['video']['arquivo'])) ?>" controls="" playsinline="" preload="metadata" poster="<?= e(url_midia($h['sobre']['video']['poster'])) ?>" style="max-width:100%; max-height:480px; width:auto; aspect-ratio: <?= $vl ?>/<?= $va ?>; object-fit:cover; border-radius:20px; display:block; background:#000;"></video>
       <div onclick="toggleApresentacaoVideo()" style="position:absolute; top:0; left:0; right:0; bottom:44px; cursor:pointer;"></div>
     </div>
   </div>
