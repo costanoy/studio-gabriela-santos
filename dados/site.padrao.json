@@ -1,0 +1,552 @@
+{
+    "versao_esquema": 1,
+    "revisao": 0,
+    "atualizado_em": "2026-11-16T00:00:00-03:00",
+    "contato": {
+        "whatsapp": "5562984141116",
+        "whatsapp_exibicao": "(62) 98414-1116",
+        "mensagem_padrao": "Olá! Gostaria de agendar um horário no Studio Gabriela Santos.",
+        "instagram_usuario": "gabisantos_estetica",
+        "endereco_linhas": [
+            "Rua 01, Q.31, L.03 — Palmeiras 1",
+            "Esquina com a Rua 12, dois portões pretos",
+            "Studio Jennifer Oliveira",
+            "Goianésia — GO"
+        ],
+        "endereco_curto": "Rua 01, Q.31, L.03 — Palmeiras 1",
+        "endereco_schema": {
+            "rua": "Rua 01, Q.31, L.03, Palmeiras 1",
+            "cidade": "Goianésia",
+            "uf": "GO",
+            "pais": "BR"
+        },
+        "horario": "Segunda à sexta, das 8h às 17h",
+        "horario_schema": "Mo-Fr 08:00-17:00",
+        "geo": {
+            "lat": -15.33235,
+            "lng": -49.133907
+        },
+        "maps_link": "https://maps.app.goo.gl/SFJzFnDdAkket245A",
+        "maps_embed": "https://www.google.com/maps?q=-15.332350,-49.133907&output=embed",
+        "avaliacao_online": "https://forms.gle/nkKaVqY9BxyV5XVPA"
+    },
+    "seo": {
+        "titulo": "Studio Gabriela Santos — Estética Corporal e Facial em Goianésia, GO",
+        "descricao": "Studio Gabriela Santos: Liposhape, drenagem linfática, massagem modeladora, limpeza de pele, ultrassom e mais em Goianésia-GO. Agende pelo WhatsApp.",
+        "og_titulo": "Studio Gabriela Santos — Estética Corporal e Facial em Goianésia",
+        "og_descricao": "Cuidado, técnica e resultado. Procedimentos corporais e faciais em Goianésia-GO. Agende pelo WhatsApp.",
+        "og_imagem_alt": "Studio Gabriela Santos — estética corporal e facial",
+        "titulo_resultados": "Resultados Antes e Depois — Studio Gabriela Santos | Goianésia, GO",
+        "descricao_resultados": "Veja os resultados de antes e depois dos protocolos do Studio Gabriela Santos em Goianésia-GO: Liposhape, drenagem linfática, limpeza de pele, ultrassom e corrente fortalecedora.",
+        "og_titulo_resultados": "Resultados Antes e Depois — Studio Gabriela Santos",
+        "og_descricao_resultados": "Resultados reais de Liposhape, drenagem linfática, limpeza de pele e mais em Goianésia-GO.",
+        "og_imagem": "assets/og-image.jpg",
+        "url_base": "https://studiogabrielasantos.com.br"
+    },
+    "marca": {
+        "logo_texto": {
+            "arquivo": "assets/logo.svg",
+            "largura": 0,
+            "altura": 0,
+            "alt": "Studio Gabriela Santos"
+        },
+        "logo_icone": {
+            "arquivo": "assets/logo-gs.png",
+            "largura": 1920,
+            "altura": 1080,
+            "alt": "Studio Gabriela Santos"
+        }
+    },
+    "home": {
+        "hero": {
+            "imagem": {
+                "arquivo": "assets/hero-bg.png",
+                "largura": 1920,
+                "altura": 1080
+            },
+            "titulo": "Studio Gabriela Santos",
+            "texto": "Cuidado, técnica e resultado. Procedimentos corporais e faciais pensados para realçar sua beleza natural.",
+            "botao_principal": "Agendar pelo WhatsApp",
+            "botao_secundario": "Ver procedimentos"
+        },
+        "boas_vindas": {
+            "paragrafos": [
+                "Seja bem-vinda ao Studio que transforma suas queixas em resultados! ✨",
+                "Aqui, cada protocolo é pensado para você, respeitando suas necessidades e objetivos. Porque o seu corpo merece um cuidado personalizado!"
+            ]
+        },
+        "sobre": {
+            "foto": {
+                "arquivo": "assets/sobre-foto.webp",
+                "largura": 690,
+                "altura": 920,
+                "alt": "Gabriela Santos"
+            },
+            "rotulo": "Sobre o studio",
+            "titulo": "Técnica e cuidado em cada atendimento",
+            "paragrafos": [
+                "O Studio Gabriela Santos nasceu com o propósito de unir técnica, cuidado e atendimento personalizado, valorizando a individualidade de cada mulher.",
+                "Aqui, cada atendimento começa com uma avaliação cuidadosa para entender as necessidades e objetivos de cada corpo. A partir disso, desenvolvemos protocolos personalizados, escolhendo as técnicas e recursos mais adequados para cada caso."
+            ],
+            "numeros": [
+                {
+                    "id": "num-1",
+                    "valor": "Liposhape",
+                    "legenda": "Técnica especializada"
+                },
+                {
+                    "id": "num-2",
+                    "valor": "Mentora",
+                    "legenda": "Formação de profissionais"
+                }
+            ],
+            "video": {
+                "arquivo": "assets/apresentacao.mp4",
+                "poster": "assets/sobre-foto.webp",
+                "largura": 576,
+                "altura": 1024
+            },
+            "video_paragrafos": [
+                "Mais do que oferecer procedimentos, buscamos proporcionar uma experiência de cuidado, bem-estar e confiança, respeitando o tempo e a evolução de cada cliente.",
+                "Seu corpo é único. Seu tratamento também deve ser.",
+                "Seja bem-vinda ao Studio Gabriela Santos, um espaço pensado para você se cuidar, se sentir bem e valorizar ainda mais a sua beleza."
+            ],
+            "saiba_mais": "Saiba mais sobre o studio"
+        },
+        "procedimentos": {
+            "rotulo": "O que oferecemos",
+            "titulo": "Procedimentos",
+            "itens": [
+                {
+                    "id": "proc-liposhape",
+                    "titulo": "Liposhape",
+                    "texto": "O Liposhape é um protocolo indicado para clientes que passaram por cirurgias como lipoaspiração ou abdominoplastia, sempre respeitando o período adequado e a indicação para cada caso."
+                },
+                {
+                    "id": "proc-drenagem",
+                    "titulo": "Drenagem linfática",
+                    "texto": "Esse protocolo é indicado para retenção de líquidos, inchaço, lipedema e sensação de peso ou dores nas pernas."
+                },
+                {
+                    "id": "proc-modeladora",
+                    "titulo": "Massagem modeladora",
+                    "texto": "Trabalho manual focado em contorno corporal e redução de medidas."
+                },
+                {
+                    "id": "proc-limpeza-pele",
+                    "titulo": "Limpeza de pele",
+                    "texto": "Higienização, esfoliação e extração para uma pele mais saudável."
+                },
+                {
+                    "id": "proc-corrente",
+                    "titulo": "Corrente Fortalecedora",
+                    "texto": "Indicada para casos de flacidez muscular, com o objetivo de estimular e fortalecer a musculatura, contribuindo para uma aparência mais firme e definida."
+                },
+                {
+                    "id": "proc-ultrassom",
+                    "titulo": "Ultrassom — quebra de gordura",
+                    "texto": "Protocolo de redução de medidas com ultrassom lipolítico."
+                },
+                {
+                    "id": "proc-relaxante",
+                    "titulo": "Massagem relaxante",
+                    "texto": "Alívio de tensões com técnicas de relaxamento corporal."
+                }
+            ]
+        },
+        "resultados": {
+            "rotulo": "Transformações reais",
+            "titulo": "Resultados",
+            "texto_ver_mais": "Ver mais"
+        },
+        "cursos": {
+            "rotulo": "Formação profissional",
+            "titulo": "Cursos",
+            "descricao": "Formações com Gabriela Santos para profissionais que querem dominar técnicas manuais avançadas de estética.",
+            "itens": [
+                {
+                    "id": "curso-metodo",
+                    "titulo": "Método Gabriela Santos",
+                    "carga_horaria": "Carga horária: 10 horas",
+                    "descricao": "Domine as técnicas manuais mais lucrativas do mercado e aprenda a esculpir corpos com base científica e resultados imediatos.",
+                    "mensagem_whatsapp": "Olá! Quero saber mais sobre o curso Método Gabriela Santos.",
+                    "conteudo": [
+                        "Drenagem linfática",
+                        "Massagem com ventosa (Liposhape)",
+                        "Massagem com hiperfoco na respiração",
+                        "3 técnicas manuais",
+                        "Associações x manta térmica",
+                        "Prática demonstrativa",
+                        "Prática em pacientes modelo"
+                    ],
+                    "modulos": [
+                        "Fundamentos da drenagem e otimização do sistema linfático",
+                        "Protocolo Liposhape / deslizamento com ventosa",
+                        "Estética integrativa: manobras com foco respiratório",
+                        "Associações estratégicas: potencialização metabólica com manta térmica",
+                        "Prática clínica: demonstração minuciosa em pacientes modelo"
+                    ]
+                },
+                {
+                    "id": "curso-limpeza",
+                    "titulo": "Limpeza de Pele",
+                    "carga_horaria": "Carga horária: 10 horas",
+                    "descricao": "Domine técnicas de limpeza de pele e torne-se referência no mercado da estética.",
+                    "mensagem_whatsapp": "Olá! Quero saber mais sobre o curso Limpeza de Pele.",
+                    "conteudo": [
+                        "Higienização",
+                        "Esfoliação",
+                        "Emoliência",
+                        "Extração de comedões (cravos)",
+                        "Tônico",
+                        "Alta frequência",
+                        "Hidratante",
+                        "Proteção solar"
+                    ],
+                    "modulos": [
+                        "Higienização da pele e esfoliação",
+                        "Emoliência e preparação para extração",
+                        "Tonificação da pele",
+                        "Alta frequência",
+                        "Hidratação facial",
+                        "Fotoproteção",
+                        "Protocolo completo de limpeza de pele"
+                    ]
+                }
+            ]
+        },
+        "depoimentos": {
+            "rotulo": "O que dizem",
+            "titulo": "Depoimentos de clientes",
+            "itens": [
+                {
+                    "id": "dep-1",
+                    "texto": "“Passando pra te falar o quanto eu estou me sentindo tão bem com a massagem, já vi resultado. Vc tem um dom através de suas mãos, q Deus continue te abençoando cada dia mais p continuar transformando vidas. E quero continuar firme p alcançar ainda mais. Parabéns 👏🏼👏🏼👏🏼🥰🥰🥰”",
+                    "autor": "Cliente do studio",
+                    "servico": "Massagem Modeladora"
+                },
+                {
+                    "id": "dep-2",
+                    "texto": "“Seu trabalho é impecável, tô contente demais com o resultado.”",
+                    "autor": "Cliente do studio",
+                    "servico": "Liposhape"
+                },
+                {
+                    "id": "dep-3",
+                    "texto": "“Estou me sentindo beeem melhor, já estou vestindo minhas roupas e observando os resultados, minha cintura afinou, culote nem se fala o quanto diminuiu, e meu marido perguntando porque estou fininha rss. Estamos no início e já estou muito feliz 💗 “Mãozinhas de fada“😅😍💖”",
+                    "autor": "Cliente do studio",
+                    "servico": "Ultrassom"
+                },
+                {
+                    "id": "dep-4",
+                    "texto": "“Chocada 😮 Senti diferença no tornozelo também… tive que fechar a sandália em um furo a mais.”",
+                    "autor": "Cliente do studio",
+                    "servico": "Drenagem Linfática"
+                }
+            ]
+        },
+        "contato_secao": {
+            "rotulo": "Contato",
+            "titulo": "Agende seu horário"
+        }
+    },
+    "resultados": {
+        "titulo_pagina": "Todos os resultados",
+        "cta_texto": "Quer um resultado assim? Agende pelo WhatsApp",
+        "categorias": [
+            {
+                "id": "liposhape",
+                "nome": "Liposhape",
+                "ordem": 1
+            },
+            {
+                "id": "drenagem",
+                "nome": "Drenagem linfática",
+                "ordem": 2
+            },
+            {
+                "id": "limpeza",
+                "nome": "Limpeza de pele",
+                "ordem": 3
+            },
+            {
+                "id": "ultrassom",
+                "nome": "Ultrassom Lipolítico",
+                "ordem": 4
+            },
+            {
+                "id": "corrente",
+                "nome": "Corrente Fortalecedora",
+                "ordem": 5
+            }
+        ],
+        "itens": [
+            {
+                "id": "cmp-liposhape-1",
+                "tipo": "comparacao",
+                "categoria": "liposhape",
+                "titulo": "Liposhape",
+                "em_resultados": true,
+                "ordem": 1,
+                "na_home": true,
+                "ordem_home": 1,
+                "antes": {
+                    "arquivo": "assets/results/liposhape-antes1.jpeg",
+                    "largura": 1600,
+                    "altura": 1537,
+                    "alt": "Liposhape — antes do tratamento",
+                    "enquadramento": {
+                        "width": 138.799,
+                        "height": 100,
+                        "left": 50,
+                        "top": 50,
+                        "automatico": false
+                    }
+                },
+                "depois": {
+                    "arquivo": "assets/results/liposhape-depois1.jpeg",
+                    "largura": 1506,
+                    "altura": 1600,
+                    "alt": "Liposhape — depois do tratamento",
+                    "enquadramento": {
+                        "width": 125.5,
+                        "height": 100,
+                        "left": 45.888,
+                        "top": 50,
+                        "automatico": false
+                    }
+                }
+            },
+            {
+                "id": "cmp-drenagem-1",
+                "tipo": "comparacao",
+                "categoria": "drenagem",
+                "titulo": "Drenagem linfática",
+                "em_resultados": true,
+                "ordem": 1,
+                "na_home": true,
+                "ordem_home": 2,
+                "antes": {
+                    "arquivo": "assets/results/drenagem-antes1.jpeg",
+                    "largura": 1180,
+                    "altura": 1600,
+                    "alt": "Drenagem linfática — antes do tratamento",
+                    "enquadramento": {
+                        "width": 106.896,
+                        "height": 108.708,
+                        "left": 51.524,
+                        "top": 53.216,
+                        "automatico": false
+                    }
+                },
+                "depois": {
+                    "arquivo": "assets/results/drenagem-depois1.jpeg",
+                    "largura": 1179,
+                    "altura": 1600,
+                    "alt": "Drenagem linfática — depois do tratamento",
+                    "enquadramento": {
+                        "width": 101.015,
+                        "height": 102.814,
+                        "left": 50.508,
+                        "top": 48.554,
+                        "automatico": false
+                    }
+                }
+            },
+            {
+                "id": "cmp-drenagem-2",
+                "tipo": "comparacao",
+                "categoria": "drenagem",
+                "titulo": "Drenagem linfática",
+                "em_resultados": true,
+                "ordem": 2,
+                "na_home": true,
+                "ordem_home": 3,
+                "antes": {
+                    "arquivo": "assets/results/drenagem-antes2.jpeg",
+                    "largura": 1149,
+                    "altura": 1600,
+                    "alt": "Drenagem linfática — antes do tratamento",
+                    "enquadramento": {
+                        "width": 100,
+                        "height": 104.439,
+                        "left": 50,
+                        "top": 50,
+                        "automatico": false
+                    }
+                },
+                "depois": {
+                    "arquivo": "assets/results/drenagem-depois2.jpeg",
+                    "largura": 1028,
+                    "altura": 1600,
+                    "alt": "Drenagem linfática — depois do tratamento",
+                    "enquadramento": {
+                        "width": 113.869,
+                        "height": 132.921,
+                        "left": 50.062,
+                        "top": 46.914,
+                        "automatico": false
+                    }
+                }
+            },
+            {
+                "id": "cmp-limpeza-1",
+                "tipo": "comparacao",
+                "categoria": "limpeza",
+                "titulo": "Limpeza de pele",
+                "em_resultados": true,
+                "ordem": 1,
+                "na_home": true,
+                "ordem_home": 4,
+                "antes": {
+                    "arquivo": "assets/results/limpeza-antes1.jpeg",
+                    "largura": 1284,
+                    "altura": 1123,
+                    "alt": "Limpeza de pele — antes do tratamento",
+                    "enquadramento": {
+                        "width": 152.449,
+                        "height": 100,
+                        "left": 50,
+                        "top": 50,
+                        "automatico": false
+                    }
+                },
+                "depois": {
+                    "arquivo": "assets/results/limpeza-depois1.jpeg",
+                    "largura": 1284,
+                    "altura": 1107,
+                    "alt": "Limpeza de pele — depois do tratamento",
+                    "enquadramento": {
+                        "width": 154.652,
+                        "height": 100,
+                        "left": 41.775,
+                        "top": 50,
+                        "automatico": false
+                    }
+                }
+            },
+            {
+                "id": "cmp-limpeza-2",
+                "tipo": "comparacao",
+                "categoria": "limpeza",
+                "titulo": "Limpeza de pele",
+                "em_resultados": true,
+                "ordem": 2,
+                "na_home": true,
+                "ordem_home": 5,
+                "antes": {
+                    "arquivo": "assets/results/limpeza-antes2.jpeg",
+                    "largura": 1284,
+                    "altura": 1059,
+                    "alt": "Limpeza de pele — antes do tratamento",
+                    "enquadramento": {
+                        "width": 179.27,
+                        "height": 110.892,
+                        "left": 58.562,
+                        "top": 44.554,
+                        "automatico": false
+                    }
+                },
+                "depois": {
+                    "arquivo": "assets/results/limpeza-depois2.jpeg",
+                    "largura": 1284,
+                    "altura": 1056,
+                    "alt": "Limpeza de pele — depois do tratamento",
+                    "enquadramento": {
+                        "width": 162.121,
+                        "height": 100,
+                        "left": 52.661,
+                        "top": 50,
+                        "automatico": false
+                    }
+                }
+            },
+            {
+                "id": "vid-liposhape-1",
+                "tipo": "video",
+                "categoria": "liposhape",
+                "rotulo": "Resultado",
+                "arquivo": "assets/results/liposhape-depois3.mp4",
+                "poster": "assets/img/99c58818.jpg",
+                "largura": 464,
+                "altura": 832,
+                "em_resultados": true,
+                "ordem": 2,
+                "na_home": false,
+                "ordem_home": 0
+            },
+            {
+                "id": "vid-liposhape-2",
+                "tipo": "video",
+                "categoria": "liposhape",
+                "rotulo": "Pós Liposhape",
+                "arquivo": "assets/results/liposhape-pos.mp4",
+                "poster": "assets/img/39883127.jpg",
+                "largura": 1024,
+                "altura": 576,
+                "em_resultados": true,
+                "ordem": 3,
+                "na_home": false,
+                "ordem_home": 0
+            },
+            {
+                "id": "vid-ultrassom-1",
+                "tipo": "video",
+                "categoria": "ultrassom",
+                "rotulo": "Depois",
+                "arquivo": "assets/results/ultrassom-depois1.mp4",
+                "poster": "assets/img/d96ec399.jpg",
+                "largura": 480,
+                "altura": 480,
+                "em_resultados": true,
+                "ordem": 2,
+                "na_home": false,
+                "ordem_home": 0
+            },
+            {
+                "id": "vid-corrente-1",
+                "tipo": "video",
+                "categoria": "corrente",
+                "rotulo": "Corrente Fortalecedora",
+                "arquivo": "assets/results/corrente-1.mp4",
+                "poster": "assets/img/5c2dbddb.jpg",
+                "largura": 1024,
+                "altura": 576,
+                "em_resultados": true,
+                "ordem": 1,
+                "na_home": false,
+                "ordem_home": 0
+            },
+            {
+                "id": "vid-corrente-2",
+                "tipo": "video",
+                "categoria": "corrente",
+                "rotulo": "Corrente Fortalecedora",
+                "arquivo": "assets/results/corrente-2.mp4",
+                "poster": "assets/img/bcea0fb6.jpg",
+                "largura": 576,
+                "altura": 1024,
+                "em_resultados": true,
+                "ordem": 2,
+                "na_home": false,
+                "ordem_home": 0
+            },
+            {
+                "id": "foto-ultrassom-1",
+                "tipo": "foto",
+                "categoria": "ultrassom",
+                "rotulo": "Antes",
+                "ajuste": "contain",
+                "posicao_x": -0.86,
+                "arquivo": "assets/results/ultrassom-antes1.jpeg",
+                "largura": 1284,
+                "altura": 1116,
+                "alt": "Ultrassom Lipolítico — antes do tratamento",
+                "em_resultados": true,
+                "ordem": 1,
+                "na_home": false,
+                "ordem_home": 0
+            }
+        ]
+    }
+}
