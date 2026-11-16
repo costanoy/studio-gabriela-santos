@@ -107,4 +107,35 @@ gravar('php-disfarcado.jpg', "<?php echo 'oi'; ?>\n" . str_repeat('x', 400));
 // HEIC cru: só a caixa ftyp, o bastante para o finfo reconhecer
 gravar('foto-iphone.heic', pack('N', 24) . 'ftypheic' . pack('N', 0) . 'mif1heic' . str_repeat("\0", 200));
 
+echo "Vídeos (ffmpeg)\n";
+
+function ffmpeg(string $args, string $saida): void
+{
+    global $pasta;
+    $cmd = 'ffmpeg -hide_banner -loglevel error -y ' . $args . ' ' . escapeshellarg("$pasta/$saida");
+    exec($cmd . ' 2>&1', $linhas, $codigo);
+    if ($codigo !== 0) {
+        fwrite(STDERR, "ffmpeg falhou em $saida: " . implode("\n", $linhas) . "\n");
+        return;
+    }
+    printf("  %-34s %7d bytes\n", $saida, filesize("$pasta/$saida"));
+}
+
+// Fonte com o primeiro quadro bem diferente dos seguintes (para o teste da capa no quadro 0)
+$fonte = static fn(string $tam, string $dur = '1') => '-f lavfi -i ' . escapeshellarg("testsrc2=size=$tam:rate=15:duration=$dur");
+$h264 = '-c:v libx264 -preset veryfast -crf 30 -pix_fmt yuv420p -g 15';
+$local = '-metadata ' . escapeshellarg('location=+15.9365-049.2536/') . ' -metadata ' . escapeshellarg('location-eng=+15.9365-049.2536/')
+    . ' -metadata ' . escapeshellarg('com.apple.quicktime.location.ISO6709=+15.9365-049.2536+000.000/')
+    . ' -metadata ' . escapeshellarg('com.apple.quicktime.make=Apple') . ' -movflags use_metadata_tags+faststart';
+
+ffmpeg($fonte('320x240') . " $h264 $local", 'video-h264-com-local.mp4');
+ffmpeg($fonte('320x240') . ' -c:v libx265 -preset veryfast -crf 32 -pix_fmt yuv420p -tag:v hvc1', 'video-hevc.mp4');
+ffmpeg($fonte('3840x2160', '0.4') . ' -c:v libx264 -preset ultrafast -crf 45 -pix_fmt yuv420p', 'video-4k.mp4');
+// Gravado deitado (1920x1080) com giro de 90 graus: na tela fica em pé, 1080x1920, e deve passar
+ffmpeg('-noautorotate -display_rotation 90 ' . $fonte('1920x1080', '0.4') . ' -c:v libx264 -preset ultrafast -crf 45 -pix_fmt yuv420p', 'video-1080-girado.mp4');
+// Em pé de verdade (1080x1920) sem giro
+ffmpeg($fonte('1080x1920', '0.4') . ' -c:v libx264 -preset ultrafast -crf 45 -pix_fmt yuv420p', 'video-1080-em-pe.mp4');
+// Só áudio num MP4: não é vídeo
+ffmpeg('-f lavfi -i sine=frequency=440:duration=1 -c:a aac', 'audio-sem-video.mp4');
+
 echo "Pronto.\n";

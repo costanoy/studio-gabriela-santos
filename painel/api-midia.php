@@ -79,6 +79,33 @@ switch ($acao) {
         $maximo = (int) ($entrada['maximo'] ?? 1600) === 800 ? 800 : 1600;
         resposta_midia(midia_foto_salvar((string) $f['tmp_name'], (string) $f['name'], $maximo));
 
+    case 'video_iniciar':
+        resposta_midia(midia_video_iniciar((int) ($entrada['tamanho'] ?? 0), (string) ($entrada['nome'] ?? '')));
+
+    case 'video_estado':
+        resposta_midia(midia_video_estado((string) ($entrada['envio'] ?? '')));
+
+    case 'video_parte':
+        $f = arquivo_recebido('arquivo');
+        if ($f === null) {
+            resposta_midia(['erro' => 'parte_invalida']);
+        }
+        resposta_midia(midia_video_parte((string) ($entrada['envio'] ?? ''), (int) ($entrada['indice'] ?? -1), (string) $f['tmp_name']));
+
+    case 'video_concluir':
+        resposta_midia(midia_video_concluir((string) ($entrada['envio'] ?? '')));
+
+    case 'video_cancelar':
+        midia_envio_apagar((string) ($entrada['envio'] ?? ''));
+        resposta_midia([]);
+
+    case 'poster':
+        $f = arquivo_recebido('arquivo');
+        if ($f === null) {
+            resposta_midia(['erro' => 'poster_falhou']);
+        }
+        resposta_midia(midia_poster_salvar((string) $f['tmp_name']));
+
     default:
         responder_json(['ok' => false, 'erro' => 'acao_invalida'], 400);
 }

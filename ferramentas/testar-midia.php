@@ -212,6 +212,138 @@ $ex = function_exists('exif_read_data') ? @exif_read_data($saida_gps) : false;
 t($ex === false || (!isset($ex['GPSLatitude']) && !isset($ex['Make']) && !isset($ex['Model']) && !isset($ex['Orientation'])), 'exif_read_data da saída não tem GPS, Make, Model nem Orientation');
 t((fileperms($saida_gps) & 0111) === 0, 'o arquivo gravado não é executável');
 
+// ---------------------------------------------------------------------------
+// Vídeo
+// ---------------------------------------------------------------------------
+
+/** Envia $arquivo em partes pelas funções do núcleo. $so_ate: para depois dessa quantidade de partes (simula queda). */
+function enviar_video(string $arquivo, ?string $envio = null, ?int $so_ate = null, array $pular = []): array
+{
+    global $tmp;
+    if ($envio === null) {
+        $ini = midia_video_iniciar(filesize($arquivo), basename($arquivo));
+        if (isset($ini['erro'])) {
+            return $ini;
+        }
+    } else {
+        $ini = midia_video_estado($envio) + ['envio' => $envio];
+    }
+    $h = fopen($arquivo, 'rb');
+    $enviadas = 0;
+    for ($i = 0; $i < $ini['total']; $i++) {
+        if (in_array($i, $pular, true)) {
+            continue;
+        }
+        if ($so_ate !== null && $enviadas >= $so_ate) {
+            break;
+        }
+        fseek($h, $i * $ini['parte']);
+        $p = $tmp . '/parte-' . $i . '.bin';
+        file_put_contents($p, (string) fread($h, $ini['parte']));
+        $r = midia_video_parte($ini['envio'], $i, $p);
+        if (isset($r['erro'])) {
+            fclose($h);
+            return $r;
+        }
+        $enviadas++;
+    }
+    fclose($h);
+    return ['envio' => $ini['envio'], 'total' => $ini['total'], 'parte' => $ini['parte']];
+}
+
+function enviar_e_concluir(string $arquivo): array
+{
+    $e = enviar_video($arquivo);
+    return isset($e['erro']) ? $e : midia_video_concluir($e['envio']);
+}
+
+$vfix = fn(string $n) => "$fix/$n";
+echo "\nL10 vídeo do iPhone\n";
+$ok264 = enviar_e_concluir($vfix('video-h264-com-local.mp4'));
+t(isset($ok264['arquivo']) && preg_match('#^conteudo/midia/\d{4}/[0-9a-f]{16}\.mp4$#', $ok264['arquivo']) === 1, 'vídeo H.264 pequeno é aceito e ganha nome aleatório');
+t(($ok264['largura'] ?? 0) === 320 && ($ok264['altura'] ?? 0) === 240, 'devolve as dimensões do vídeo (320x240)');
+$hevc = enviar_e_concluir($vfix('video-hevc.mp4'));
+t(($hevc['erro'] ?? '') === 'hevc', 'vídeo HEVC é recusado com o código hevc');
+$k4 = enviar_e_concluir($vfix('video-4k.mp4'));
+t(($k4['erro'] ?? '') === 'grande_demais', 'vídeo 4K é recusado com o código grande_demais');
+$gir = enviar_e_concluir($vfix('video-1080-girado.mp4'));
+t(($gir['largura'] ?? 0) === 1080 && ($gir['altura'] ?? 0) === 1920, 'vídeo 1920x1080 com giro de 90 graus é lido como 1080x1920 e passa');
+$pe = enviar_e_concluir($vfix('video-1080-em-pe.mp4'));
+t(($pe['largura'] ?? 0) === 1080 && ($pe['altura'] ?? 0) === 1920, 'vídeo em pé de 1080x1920 passa');
+$au = enviar_e_concluir($vfix('audio-sem-video.mp4'));
+t(($au['erro'] ?? '') === 'video_ilegivel', 'MP4 só com áudio é recusado');
+file_put_contents($tmp . '/falso.mp4', file_get_contents($vfix('foto.png')) . str_repeat('x', 2000));
+$png_como_video = enviar_e_concluir($tmp . '/falso.mp4');
+t(($png_como_video['erro'] ?? '') === 'video_formato', 'PNG mandado como vídeo é recusado (video_formato)');
+$pesado = midia_video_iniciar(300 * 1024 * 1024, 'grande.mov');
+t(($pesado['erro'] ?? '') === 'video_pesado' && ($pesado['tamanho_mb'] ?? 0) === 300 && ($pesado['limite_mb'] ?? 0) === 250, 'vídeo de 300 MB é recusado já no começo, com os números para a frase');
+t(count(glob($tmp . '/dados/envios/*')) === 0, 'envios recusados não deixam pasta de trabalho para trás');
+
+echo "\nT13 localização do vídeo\n";
+$caminho_ok = caminho_saida($tmp, $ok264['arquivo']);
+$bruto = (string) file_get_contents($caminho_ok);
+t(strpos($bruto, "\xA9xyz") === false && strpos($bruto, 'ISO6709') === false && strpos($bruto, '+15.9365') === false, 'nos bytes do vídeo não há ©xyz, ISO6709 nem coordenadas');
+t(strpos($bruto, 'Apple') === false, 'nos bytes do vídeo não sobra a marca do aparelho');
+$origem_bruta = (string) file_get_contents($vfix('video-h264-com-local.mp4'));
+t(strpos($origem_bruta, 'ISO6709') !== false, 'o exemplo de teste tinha mesmo localização (o teste é válido)');
+$ffprobe = trim((string) shell_exec('ffprobe -v error -show_format -show_streams ' . escapeshellarg($caminho_ok) . ' 2>&1'));
+if ($ffprobe !== '' && stripos($ffprobe, 'codec_name') !== false) {
+    t(preg_match('/TAG:[^=\n]*(location|xyz)/i', $ffprobe) === 0, 'ffprobe -show_format não mostra nenhuma tag location');
+    $orig_probe = (string) shell_exec('ffprobe -v error -show_format ' . escapeshellarg($vfix('video-h264-com-local.mp4')) . ' 2>&1');
+    t(preg_match('/TAG:location=/', $orig_probe) === 1, 'o ffprobe do exemplo original mostra location (o teste enxerga o problema)');
+    t(strpos($ffprobe, 'codec_name=h264') !== false && strpos($ffprobe, 'width=320') !== false, 'o vídeo continua tocável (ffprobe lê h264 320 de largura)');
+} else {
+    t(false, 'ffprobe precisa estar no PATH para este teste');
+}
+$d = trim((string) shell_exec('ffmpeg -v error -i ' . escapeshellarg($caminho_ok) . ' -f null - 2>&1'));
+t($d === '', 'ffmpeg decodifica o vídeo limpo inteiro sem erro');
+
+echo "\nT15 envio em partes e retomada\n";
+$grande = $tmp . '/60mb.mp4';
+$base = (string) file_get_contents($vfix('video-1080-em-pe.mp4'));
+$resto = 60 * 1024 * 1024 - strlen($base);
+$gh = fopen($grande, 'wb');
+fwrite($gh, $base . pack('N', $resto) . 'free');
+for ($k = 0; $k < $resto - 8; $k += 1048576) {
+    fwrite($gh, str_repeat("\0", min(1048576, $resto - 8 - $k)));
+}
+fclose($gh);
+clearstatcache();
+t(filesize($grande) === 60 * 1024 * 1024, 'vídeo de teste de 60 MB criado');
+$ini = midia_video_iniciar(filesize($grande), '60mb.mp4');
+t(isset($ini['envio']) && $ini['parte'] <= 5 * 1024 * 1024 && $ini['total'] === (int) ceil(filesize($grande) / $ini['parte']), 'o servidor define partes de até 5 MB');
+$lim = min(midia_bytes_ini((string) ini_get('upload_max_filesize')), midia_bytes_ini((string) ini_get('post_max_size')));
+t($ini['parte'] <= $lim * 0.9 + 1, 'a parte cabe com folga de 10% no limite do servidor');
+midia_envio_apagar($ini['envio']);
+$a = enviar_video($grande, null, 5);
+t(isset($a['envio']), 'primeiras partes enviadas e a "conexão cai"');
+$est = midia_video_estado($a['envio']);
+t(count($est['recebidas']) === 5, 'o estado mostra 5 partes recebidas');
+$inc = midia_video_concluir($a['envio']);
+t(($inc['erro'] ?? '') === 'partes_faltando', 'concluir com parte faltando devolve partes_faltando');
+$errada = $tmp . '/errada.bin';
+file_put_contents($errada, 'curta');
+$r_errada = midia_video_parte($a['envio'], 9, $errada);
+t(($r_errada['erro'] ?? '') === 'parte_invalida', 'parte de tamanho errado devolve parte_invalida');
+$r_idx = midia_video_parte($a['envio'], 9999, $errada);
+t(($r_idx['erro'] ?? '') === 'parte_invalida', 'número de parte fora do envio devolve parte_invalida');
+$b = enviar_video($grande, $a['envio'], null, $est['recebidas']);
+t(!isset($b['erro']), 'retomada: só as partes que faltam são enviadas');
+$fim = midia_video_concluir($a['envio']);
+t(isset($fim['arquivo']), 'depois de retomar, o vídeo de 60 MB conclui');
+t(isset($fim['arquivo']) && filesize(caminho_saida($tmp, $fim['arquivo'])) === 60 * 1024 * 1024, 'o arquivo final tem os 60 MB certos');
+t(count(glob($tmp . '/dados/envios/*')) === 0, 'a pasta de partes é apagada ao concluir');
+$naoexiste = midia_video_estado('0123456789abcdef01234567');
+t(($naoexiste['erro'] ?? '') === 'envio_nao_encontrado', 'envio desconhecido devolve envio_nao_encontrado');
+t((midia_video_estado('../../etc')['erro'] ?? '') === 'envio_nao_encontrado', 'identificador com ../ é recusado');
+$c = enviar_video($vfix('video-h264-com-local.mp4'), null, 0);
+midia_envio_apagar($c['envio']);
+t(!is_dir($tmp . '/dados/envios/' . $c['envio']), 'cancelar apaga as partes');
+$velho = midia_video_iniciar(2 * 1024 * 1024, 'velho.mp4');
+touch($tmp . '/dados/envios/' . $velho['envio'], time() - 90000);
+midia_video_iniciar(2 * 1024 * 1024, 'novo.mp4');
+t(!is_dir($tmp . '/dados/envios/' . $velho['envio']), 'envio parado há mais de um dia é apagado');
+
 echo "\n";
 limpar_pasta($tmp);
 config_definir(null);
