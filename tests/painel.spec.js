@@ -267,4 +267,209 @@ test.describe('P6 textos com limites', () => {
   });
 });
 
+// ===========================================================================
+// P2 / L09: resultados, ordem e enquadramento
+// ===========================================================================
+const STUB_MIDIA = () => {
+  window.PainelMidia = {
+    escolherFoto: (o) => { if (o && o.onProgresso) o.onProgresso(0.5); return Promise.resolve({ arquivo: 'assets/results/drenagem-antes1.jpeg', largura: 1180, altura: 1600 }); },
+    escolherVideo: () => Promise.resolve({ arquivo: 'assets/results/corrente-1.mp4', poster: 'assets/img/5c2dbddb.jpg', largura: 1024, altura: 576 }),
+    mensagemErro: (c) => 'Erro de teste ' + c
+  };
+};
+
+async function abrirItem(page, id) {
+  await page.click('#cartao-resultados');
+  await page.locator('[data-id="' + id + '"]').getByRole('button', { name: /^Editar/ }).click();
+  await expect(page.locator('#quadro-edicao')).toBeVisible();
+}
+
+/** Dedos sintéticos: posições em fração do quadro (0 a 1). */
+async function gesto(page, passos) {
+  await page.evaluate((ps) => {
+    const q = document.getElementById('quadro-edicao');
+    const r = q.getBoundingClientRect();
+    for (const p of ps) {
+      q.dispatchEvent(new PointerEvent(p.t, {
+        pointerId: p.id, clientX: r.left + p.x * r.width, clientY: r.top + p.y * r.height,
+        bubbles: true, cancelable: true, pointerType: 'touch', isPrimary: p.id === 1
+      }));
+    }
+  }, passos);
+}
+
+/** Posição da foto dentro do quadro, em fração do quadro (o que o olho vê). */
+function posicaoFoto(page, seletorImg, seletorQuadro) {
+  return page.evaluate(([si, sq]) => {
+    const i = document.querySelector(si).getBoundingClientRect();
+    const q = document.querySelector(sq).getBoundingClientRect();
+    return { l: (i.left - q.left) / q.width, t: (i.top - q.top) / q.height, w: i.width / q.width, h: i.height / q.height };
+  }, [seletorImg, seletorQuadro]);
+}
+function estiloFoto(page, seletor) {
+  return page.evaluate((s) => {
+    const e = document.querySelector(s);
+    return { left: parseFloat(e.style.left), top: parseFloat(e.style.top), width: parseFloat(e.style.width), height: parseFloat(e.style.height) };
+  }, seletor);
+}
+function quase(a, b, tol) { expect(Math.abs(a - b)).toBeLessThanOrEqual(tol); }
+
+test.describe('P2 resultados e enquadramento', () => {
+  test('arrastar com 1 dedo e abrir com 2 dedos: o quadro fica igual ao do site', async ({ page }) => {
+    await entrar(page);
+    await abrirItem(page, 'cmp-liposhape-1');
+    const ini = await estiloFoto(page, '#quadro-edicao img');
+    quase(ini.left, 45.888, 0.01);
+
+    await gesto(page, [{ t: 'pointerdown', id: 1, x: 0.5, y: 0.5 }, { t: 'pointermove', id: 1, x: 0.6, y: 0.5 }, { t: 'pointerup', id: 1, x: 0.6, y: 0.5 }]);
+    const arrastou = await estiloFoto(page, '#quadro-edicao img');
+    quase(arrastou.left, 55.888, 0.05);
+    quase(arrastou.top, 50, 0.001);
+
+    await gesto(page, [
+      { t: 'pointerdown', id: 1, x: 0.3, y: 0.5 }, { t: 'pointerdown', id: 2, x: 0.7, y: 0.5 },
+      { t: 'pointermove', id: 2, x: 0.9, y: 0.5 },
+      { t: 'pointerup', id: 2, x: 0.9, y: 0.5 }, { t: 'pointerup', id: 1, x: 0.3, y: 0.5 }
+    ]);
+    const zoom = await estiloFoto(page, '#quadro-edicao img');
+    quase(zoom.width, 188.25, 0.05);
+    quase(zoom.height, 150, 0.05);
+    await expect(page.locator('#zoom')).toHaveValue('150');
+    await expect(page.locator('#zoom-valor')).toContainText('150%');
+
+    // a prévia do painel já mostra o mesmo
+    const noEditor = await posicaoFoto(page, '#quadro-edicao img', '#quadro-edicao');
+    const naPrevia = await posicaoFoto(page, '#previa-site > img', '#previa-site');
+    for (const k of ['l', 't', 'w', 'h']) quase(noEditor[k], naPrevia[k], 0.002);
+
+    await page.click('#salvar');
+    await expect(page.locator('.toast')).toContainText('Salvo no site');
+
+    // o site mostra a foto exatamente no mesmo lugar
+    await page.goto('/');
+    const noSite = await page.evaluate(() => {
+      const quadro = document.querySelector('.ba-clip').parentElement;
+      const img = quadro.querySelector(':scope > img').getBoundingClientRect();
+      const q = quadro.getBoundingClientRect();
+      return { l: (img.left - q.left) / q.width, t: (img.top - q.top) / q.height, w: img.width / q.width, h: img.height / q.height };
+    });
+    for (const k of ['l', 't', 'w', 'h']) quase(noEditor[k], noSite[k], 0.002);
+  });
+
+  test('o zoom nunca passa do limite nem deixa a foto sair do quadro', async ({ page }) => {
+    await entrar(page);
+    await abrirItem(page, 'cmp-liposhape-1');
+    await page.click('#aba-antes');
+    for (let i = 0; i < 30; i++) await page.click('#zoom-mais');
+    const e = await estiloFoto(page, '#quadro-edicao img');
+    expect(e.width).toBeLessThanOrEqual(400.001);
+    expect(e.height).toBeLessThanOrEqual(400.001);
+    // empurra a foto para um canto: ela continua cobrindo o quadro
+    await gesto(page, [{ t: 'pointerdown', id: 1, x: 0.5, y: 0.5 }, { t: 'pointermove', id: 1, x: 5, y: 5 }, { t: 'pointerup', id: 1, x: 5, y: 5 }]);
+    const p = await posicaoFoto(page, '#quadro-edicao img', '#quadro-edicao');
+    expect(p.l).toBeLessThanOrEqual(0.0011);
+    expect(p.t).toBeLessThanOrEqual(0.0011);
+    expect(p.l + p.w).toBeGreaterThanOrEqual(0.9989);
+    expect(p.t + p.h).toBeGreaterThanOrEqual(0.9989);
+    await page.click('#salvar');
+    await expect(page.locator('.toast')).toContainText('Salvo no site');
+  });
+
+  test('controles de zoom (barra, − e +) e "Voltar ao automático"', async ({ page }) => {
+    await entrar(page);
+    await abrirItem(page, 'cmp-drenagem-1');
+    await expect(page.locator('#voltar-auto')).toBeEnabled();
+    const antes = Number(await page.locator('#zoom').inputValue());
+    await page.click('#zoom-mais');
+    expect(Number(await page.locator('#zoom').inputValue())).toBe(antes + 10);
+    await page.click('#zoom-menos');
+    await page.click('#zoom-menos');
+    expect(Number(await page.locator('#zoom').inputValue())).toBe(antes - 10 < 100 ? 100 : antes - 10);
+    await page.click('#voltar-auto');
+    await expect(page.locator('#zoom')).toHaveValue('100');
+    await expect(page.locator('#voltar-auto')).toBeDisabled();
+    await page.click('#salvar');
+    await expect(page.locator('.toast')).toContainText('Salvo no site');
+    const lido = await chamar(page, { acao: 'ler' });
+    const it = lido.conteudo.resultados.itens.find((x) => x.id === 'cmp-drenagem-1');
+    expect(it.depois.enquadramento.automatico).toBe(true);
+    quase(it.depois.enquadramento.width, 100, 0.001);
+  });
+
+  test('mudar a ordem na página inicial', async ({ page }) => {
+    await entrar(page);
+    await page.click('#cartao-resultados');
+    const ids = () => page.locator('#lista-resultados .linha-res').evaluateAll((l) => l.map((x) => x.dataset.id));
+    expect((await ids())[0]).toBe('cmp-liposhape-1');
+    await page.getByRole('button', { name: 'Descer Liposhape' }).click();
+    expect((await ids()).slice(0, 2)).toEqual(['cmp-drenagem-1', 'cmp-liposhape-1']);
+    await page.click('#salvar');
+    await expect(page.locator('.toast')).toContainText('Salvo no site');
+    const lido = await chamar(page, { acao: 'ler' });
+    const por = (id) => lido.conteudo.resultados.itens.find((x) => x.id === id);
+    expect(por('cmp-drenagem-1').ordem_home).toBe(1);
+    expect(por('cmp-liposhape-1').ordem_home).toBe(2);
+  });
+
+  test('aba da página de resultados filtra por categoria', async ({ page }) => {
+    await entrar(page);
+    await page.click('#cartao-resultados');
+    await page.click('#aba-resultados');
+    await page.selectOption('#filtro-categoria', 'corrente');
+    await expect(page.locator('#lista-resultados .linha-res')).toHaveCount(2);
+    await page.getByRole('button', { name: 'Descer Corrente Fortalecedora' }).first().click();
+    await page.click('#salvar');
+    await expect(page.locator('.toast')).toContainText('Salvo no site');
+    const lido = await chamar(page, { acao: 'ler' });
+    expect(lido.conteudo.resultados.itens.find((x) => x.id === 'vid-corrente-1').ordem).toBe(2);
+    expect(lido.conteudo.resultados.itens.find((x) => x.id === 'vid-corrente-2').ordem).toBe(1);
+  });
+
+  test('novo antes e depois com o módulo de fotos (stub)', async ({ page }) => {
+    await page.addInitScript(STUB_MIDIA);
+    await entrar(page);
+    await page.click('#cartao-resultados');
+    await page.click('#novo-comparacao');
+    await expect(page.locator('#criar')).toBeDisabled();
+    await page.locator('[data-caminho="titulo"] input').fill('Teste novo');
+    await page.click('#escolher-antes');
+    await page.click('#escolher-depois');
+    await expect(page.locator('#criar')).toBeEnabled();
+    await page.click('#criar');
+    await expect(page.locator('#quadro-edicao')).toBeVisible();
+    await page.click('#salvar');
+    await expect(page.locator('.toast')).toContainText('Salvo no site');
+    const lido = await chamar(page, { acao: 'ler' });
+    const novo = lido.conteudo.resultados.itens.find((x) => x.titulo === 'Teste novo');
+    expect(novo.tipo).toBe('comparacao');
+    expect(novo.antes.enquadramento.automatico).toBe(true);
+    expect(novo.depois.largura).toBe(1180);
+  });
+
+  test('novo vídeo com o módulo de fotos (stub)', async ({ page }) => {
+    await page.addInitScript(STUB_MIDIA);
+    await entrar(page);
+    await page.click('#cartao-resultados');
+    await page.click('#novo-video');
+    await page.locator('[data-caminho="titulo"] input').fill('Vídeo novo');
+    await page.click('#escolher-video');
+    await page.click('#criar');
+    await expect(page.locator('#trocar-video')).toBeVisible();
+    await page.click('#salvar');
+    await expect(page.locator('.toast')).toContainText('Salvo no site');
+    const lido = await chamar(page, { acao: 'ler' });
+    const v = lido.conteudo.resultados.itens.find((x) => x.rotulo === 'Vídeo novo');
+    expect(v.tipo).toBe('video');
+    expect(v.poster).toBe('assets/img/5c2dbddb.jpg');
+  });
+
+  test('sem o módulo de envio, mostra aviso simples', async ({ page }) => {
+    await entrar(page);
+    await page.click('#cartao-resultados');
+    await page.click('#novo-comparacao');
+    await page.click('#escolher-antes');
+    await expect(page.locator('#aviso-topo')).toContainText('Envio de fotos indisponível no momento');
+  });
+});
+
 // @@FIM

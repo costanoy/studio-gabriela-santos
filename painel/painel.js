@@ -362,10 +362,12 @@
   function campoTexto(caminho, s) {
     var id = 'f' + (++seq);
     var area = s.tipo === 'area';
-    var wrap = campoWrap(caminho, s.rotulo, s.dica, id, !s.opcional);
+    var wrap = campoWrap(caminho, s.rotulo, s.dica, id, !s.opcional && !s.rascunho);
     var entrada = h(area ? 'textarea' : 'input', { id: id, attrs: { rows: area ? (s.linhas || 4) : null, autocomplete: 'off', inputmode: s.digitos ? 'numeric' : null, 'aria-describedby': s.dica ? id + '-dica' : null } });
     if (!area) entrada.type = 'text';
-    entrada.value = String(obter(S.c, caminho) || '');
+    // s.raiz: campo de um rascunho (ainda não faz parte do conteúdo do site)
+    var raiz = function () { return s.raiz ? s.raiz() : S.c; };
+    entrada.value = String(obter(raiz(), caminho) || '');
     var cont = h('p', { class: 'contador' });
     function pintar() {
       var n = contar(entrada.value);
@@ -378,10 +380,11 @@
       if (!area) v = v.replace(/[\r\n]+/g, ' ');
       v = cortar(v, s.max);
       if (v !== entrada.value) entrada.value = v;
-      definir(S.c, caminho, v);
+      definir(raiz(), caminho, v);
       pintar();
       entrada.classList.remove('campo-erro');
-      mudou('Mudou textos');
+      if (s.aoMudar) s.aoMudar(v);
+      else if (!s.rascunho) mudou('Mudou textos');
     });
     wrap.appendChild(entrada);
     wrap.appendChild(cont);
@@ -593,6 +596,555 @@
     raiz.appendChild(barraAcao('Salvar no site'));
   };
   CARTOES.push({ id: 'cartao-textos', icone: '✏️', titulo: 'Textos', texto: 'Títulos, parágrafos, horário e contato', ir: function () { ir('textos'); } });
+
+  // ---------------------------------------------------------------------------
+  // Resultados: lista, ordem e edição (P2, L09)
+  // ---------------------------------------------------------------------------
+  var ABAS = [
+    { id: 'home', nome: 'Página inicial' },
+    { id: 'resultados', nome: 'Página de resultados' },
+    { id: 'fora', nome: 'Fora do site' }
+  ];
+  var TIPOS = { comparacao: 'Antes e depois', video: 'Vídeo', foto: 'Foto' };
+  var LIMITE_HOME = 5;
+  S.aba = 'home';
+  S.cat = null;
+  S.novo = null;
+
+  function itensRes() { return S.c.resultados.itens; }
+  function buscar(id) {
+    var l = itensRes();
+    for (var i = 0; i < l.length; i++) if (l[i].id === id) return l[i];
+    return null;
+  }
+  function indiceDe(id) {
+    var l = itensRes();
+    for (var i = 0; i < l.length; i++) if (l[i].id === id) return i;
+    return -1;
+  }
+  function categoriasOrd() {
+    return S.c.resultados.categorias.slice().sort(function (a, b) { return (a.ordem || 0) - (b.ordem || 0); });
+  }
+  function nomeCategoria(id) {
+    var l = S.c.resultados.categorias;
+    for (var i = 0; i < l.length; i++) if (l[i].id === id) return l[i].nome;
+    return id;
+  }
+  function nomeItem(i) { return (i.tipo === 'comparacao' ? i.titulo : i.rotulo) || 'Sem nome'; }
+  function catAtual() {
+    var cs = categoriasOrd();
+    for (var i = 0; i < cs.length; i++) if (cs[i].id === S.cat) return S.cat;
+    return cs.length ? cs[0].id : '';
+  }
+  function chaveOrdem() { return S.aba === 'home' ? 'ordem_home' : 'ordem'; }
+  /** Itens que aparecem na aba atual, na ordem em que aparecem no site. */
+  function listaVisivel() {
+    var cat = catAtual();
+    var l = itensRes().filter(function (i) {
+      if (S.aba === 'home') return i.tipo === 'comparacao' && i.na_home;
+      if (S.aba === 'resultados') return i.categoria === cat && i.em_resultados;
+      return !i.na_home && !i.em_resultados;
+    });
+    var k = chaveOrdem();
+    l.sort(function (a, b) { return (a[k] || 0) - (b[k] || 0); });
+    return l;
+  }
+  function proximaOrdem(chave, filtro) {
+    var m = 0;
+    itensRes().forEach(function (i) { if (filtro(i) && (i[chave] || 0) > m) m = i[chave]; });
+    return m + 1;
+  }
+  function mover(item, delta) {
+    var l = listaVisivel();
+    var i = l.indexOf(item);
+    var j = i + delta;
+    if (i < 0 || j < 0 || j >= l.length) return;
+    l[i] = l[j];
+    l[j] = item;
+    var k = chaveOrdem();
+    l.forEach(function (x, n) { x[k] = n + 1; });
+    mudou('Mudou a ordem dos resultados');
+    var y = window.scrollY;
+    desenhar();
+    window.scrollTo(0, y);
+  }
+
+  // --- Enquadramento (mesma conta do site) ---
+  function arred(v) { return Math.round(v * 1000) / 1000; }
+  function enqAuto(l, a) {
+    if (!(l > 0) || !(a > 0)) return { width: 100, height: 100, left: 50, top: 50, automatico: true };
+    var r = l / a, w, hh;
+    if (r > 0.75) { hh = 100; w = 100 * r / 0.75; } else { w = 100; hh = 75 / r; }
+    return { width: arred(w), height: arred(hh), left: 50, top: 50, automatico: true };
+  }
+  function enqLimitar(e) {
+    var w = Math.min(400, Math.max(100, e.width));
+    var hh = Math.min(400, Math.max(100, e.height));
+    var fx = (w - 100) / 2, fy = (hh - 100) / 2;
+    return {
+      width: arred(w), height: arred(hh),
+      left: arred(Math.min(50 + fx, Math.max(50 - fx, e.left))),
+      top: arred(Math.min(50 + fy, Math.max(50 - fy, e.top))),
+      automatico: !!e.automatico
+    };
+  }
+  /** O que o site usa de verdade: automático recalcula pelo tamanho da foto. */
+  function enqEfetivo(l) {
+    var e = l.enquadramento;
+    if (!e || e.automatico || typeof e.width !== 'number' || typeof e.height !== 'number' || typeof e.left !== 'number' || typeof e.top !== 'number') {
+      return enqAuto(l.largura, l.altura);
+    }
+    return e;
+  }
+  function zoomMax(l) {
+    var a = enqAuto(l.largura, l.altura);
+    return Math.min(3, 400 / Math.max(a.width, a.height));
+  }
+  function zoomAtual(l) {
+    var a = enqAuto(l.largura, l.altura);
+    return enqEfetivo(l).width / a.width;
+  }
+  function aplicarZoom(l, z) {
+    var a = enqAuto(l.largura, l.altura);
+    z = Math.max(1, Math.min(zoomMax(l), z));
+    var e = enqEfetivo(l);
+    var f = (a.width * z) / e.width;
+    l.enquadramento = enqLimitar({ width: a.width * z, height: a.height * z, left: 50 + (e.left - 50) * f, top: 50 + (e.top - 50) * f, automatico: false });
+  }
+  function aplicarEnq(img, e) {
+    img.style.position = 'absolute';
+    img.style.width = e.width + '%';
+    img.style.height = e.height + '%';
+    img.style.left = e.left + '%';
+    img.style.top = e.top + '%';
+    img.style.transform = 'translate(-50%,-50%)';
+  }
+  function urlFoto(arquivo) { return '../' + String(arquivo || '').replace(/^\/+/, ''); }
+
+  // --- Envio de fotos e vídeos (Lote 2B). Se o módulo não existir, avisa. ---
+  function pedirMidia(tipo, progresso, ok) {
+    var M = window.PainelMidia;
+    var fn = M && (tipo === 'video' ? M.escolherVideo : M.escolherFoto);
+    if (typeof fn !== 'function') { avisoTopo(MSG.sem_midia); return; }
+    avisoTopo(null);
+    progresso.textContent = 'Preparando…';
+    var p;
+    try {
+      p = fn.call(M, {
+        csrf: csrf(),
+        onProgresso: function (v) {
+          var n = Number(v);
+          if (!isFinite(n)) return;
+          if (n <= 1) n = n * 100;
+          progresso.textContent = 'Enviando… ' + Math.round(n) + '%';
+        }
+      });
+    } catch (e) { p = Promise.reject(e); }
+    Promise.resolve(p).then(function (r) {
+      progresso.textContent = '';
+      ok(r);
+    }, function (e) {
+      progresso.textContent = '';
+      if (e && e.cancelado) return;
+      var cod = e && (e.codigo || e.erro || e.message || e);
+      var t = '';
+      try { t = M.mensagemErro(cod); } catch (x) { t = ''; }
+      avisoTopo(typeof t === 'string' && t ? t : MSG.servidor);
+    });
+  }
+
+  // --- Lista ---
+  TELAS.resultados = function (raiz) {
+    raiz.appendChild(topo('Antes e depois e vídeos', 'home'));
+    var corpo = h('main', { id: 'conteudo-tela' });
+    corpo.appendChild(h('p', { class: 'dica', text: 'Escolha onde as fotos aparecem. Use Subir e Descer para mudar a ordem.' }));
+
+    var abas = h('div', { class: 'abas', attrs: { role: 'tablist' } });
+    ABAS.forEach(function (a) {
+      abas.appendChild(h('button', {
+        class: 'aba' + (S.aba === a.id ? ' ativa' : ''), type: 'button', id: 'aba-' + a.id, text: a.nome,
+        attrs: { role: 'tab', 'aria-selected': S.aba === a.id ? 'true' : 'false' },
+        on: { click: function () { S.aba = a.id; desenhar(); } }
+      }));
+    });
+    corpo.appendChild(abas);
+
+    if (S.aba === 'resultados') {
+      var sel = h('select', { id: 'filtro-categoria' });
+      categoriasOrd().forEach(function (c) { sel.appendChild(h('option', { value: c.id, text: c.nome })); });
+      sel.value = catAtual();
+      sel.addEventListener('change', function () { S.cat = sel.value; desenhar(); });
+      corpo.appendChild(h('label', { text: 'Categoria', attrs: { for: 'filtro-categoria' } }));
+      corpo.appendChild(sel);
+    }
+    if (S.aba === 'home') {
+      corpo.appendChild(h('p', { class: 'dica', text: 'Na página inicial aparecem os ' + LIMITE_HOME + ' primeiros.' }));
+    }
+    if (S.aba === 'fora') {
+      corpo.appendChild(h('p', { class: 'dica', text: 'Estes não aparecem no site. Toque em Editar para colocar de volta.' }));
+    }
+
+    var lista = listaVisivel();
+    var caixa = h('div', { class: 'lista-resultados', id: 'lista-resultados' });
+    if (!lista.length) caixa.appendChild(h('p', { class: 'vazio', text: 'Nada por aqui ainda.' }));
+    lista.forEach(function (item, n) {
+      var foto = item.tipo === 'comparacao' ? item.depois.arquivo : item.tipo === 'video' ? item.poster : item.arquivo;
+      var linha = h('div', { class: 'linha-res', attrs: { 'data-id': item.id } },
+        h('img', { class: 'miniatura', src: urlFoto(foto), alt: '' }),
+        h('div', { class: 'linha-res-corpo' },
+          h('strong', { text: nomeItem(item) }),
+          h('span', { class: 'dica', text: TIPOS[item.tipo] + ' · ' + nomeCategoria(item.categoria) + (S.aba === 'home' && n >= LIMITE_HOME ? ' · não aparece (só ' + LIMITE_HOME + ')' : '') }),
+          h('div', { class: 'linha-botoes' },
+            h('button', { class: 'botao', type: 'button', text: 'Editar', attrs: { 'aria-label': 'Editar ' + nomeItem(item) }, on: { click: function () { ir('item', { id: item.id, lado: 'depois' }); } } }),
+            S.aba !== 'fora' && n > 0 ? botaoPequeno('↑ Subir', function () { mover(item, -1); }, 'Subir ' + nomeItem(item)) : null,
+            S.aba !== 'fora' && n < lista.length - 1 ? botaoPequeno('↓ Descer', function () { mover(item, 1); }, 'Descer ' + nomeItem(item)) : null)));
+      caixa.appendChild(linha);
+    });
+    corpo.appendChild(caixa);
+
+    corpo.appendChild(h('div', { class: 'linha-botoes' },
+      h('button', { class: 'botao botao-principal', type: 'button', id: 'novo-comparacao', text: '+ Novo antes e depois', on: { click: function () { iniciarNovo('comparacao'); } } }),
+      h('button', { class: 'botao', type: 'button', id: 'novo-video', text: '+ Novo vídeo', on: { click: function () { iniciarNovo('video'); } } })));
+    raiz.appendChild(corpo);
+    raiz.appendChild(barraAcao('Salvar no site'));
+  };
+  CARTOES.push({ id: 'cartao-resultados', icone: '🖼️', titulo: 'Antes e depois', texto: 'Fotos, vídeos, ordem e enquadramento', ir: function () { ir('resultados'); } });
+
+  // --- Novo antes e depois / novo vídeo ---
+  function iniciarNovo(tipo) {
+    var cs = categoriasOrd();
+    S.novo = { tipo: tipo, titulo: '', categoria: S.aba === 'resultados' ? catAtual() : (cs.length ? cs[0].id : ''), antes: null, depois: null, video: null };
+    ir('novo');
+  }
+
+  function fotoNova(r, titulo, lado) {
+    return {
+      arquivo: r.arquivo, largura: r.largura, altura: r.altura,
+      alt: titulo + ' — ' + (lado === 'antes' ? 'antes' : 'depois') + ' do tratamento',
+      enquadramento: enqAuto(r.largura, r.altura)
+    };
+  }
+
+  TELAS.novo = function (raiz) {
+    var n = S.novo;
+    if (!n) { ir('resultados'); return; }
+    var comp = n.tipo === 'comparacao';
+    raiz.appendChild(topo(comp ? 'Novo antes e depois' : 'Novo vídeo', 'resultados'));
+    var corpo = h('main', { id: 'conteudo-tela' });
+    corpo.appendChild(campoTexto('titulo', {
+      rotulo: comp ? 'Nome do tratamento' : 'Texto no canto do vídeo', dica: comp ? 'Exemplo: Drenagem linfática' : 'Exemplo: Resultado',
+      max: comp ? 80 : 40, raiz: function () { return S.novo; }, rascunho: true,
+      aoMudar: function () { pintarCriar(); }
+    }));
+    var sel = h('select', { id: 'novo-categoria' });
+    categoriasOrd().forEach(function (c) { sel.appendChild(h('option', { value: c.id, text: c.nome })); });
+    sel.value = n.categoria;
+    sel.addEventListener('change', function () { n.categoria = sel.value; });
+    corpo.appendChild(h('label', { text: 'Categoria', attrs: { for: 'novo-categoria' } }));
+    corpo.appendChild(sel);
+
+    var progresso = h('p', { class: 'dica', id: 'progresso-midia', attrs: { role: 'status' } });
+    var criar = h('button', { class: 'botao botao-principal botao-bloco', type: 'button', id: 'criar', text: comp ? 'Criar antes e depois' : 'Criar vídeo' });
+
+    function bloco(rotulo, lado, id) {
+      var miniatura = h('img', { class: 'miniatura grande', alt: '' });
+      var cx = h('div', { class: 'bloco-foto' });
+      function pintar() {
+        var x = lado === 'video' ? (n.video && n.video.poster) : (n[lado] && n[lado].arquivo);
+        miniatura.hidden = !x;
+        if (x) miniatura.src = urlFoto(x);
+        btn.textContent = x ? 'Trocar ' + rotulo.toLowerCase() : 'Escolher ' + rotulo.toLowerCase();
+      }
+      var btn = h('button', { class: 'botao', type: 'button', id: id, on: { click: function () {
+        pedirMidia(lado === 'video' ? 'video' : 'foto', progresso, function (r) {
+          if (lado === 'video') n.video = { arquivo: r.arquivo, poster: r.poster, largura: r.largura, altura: r.altura };
+          else n[lado] = fotoNova(r, n.titulo || 'Resultado', lado);
+          pintar();
+          pintarCriar();
+        });
+      } } });
+      cx.appendChild(h('p', { class: 'rotulo', text: rotulo }));
+      cx.appendChild(miniatura);
+      cx.appendChild(btn);
+      pintar();
+      return cx;
+    }
+    if (comp) {
+      corpo.appendChild(bloco('Foto ANTES', 'antes', 'escolher-antes'));
+      corpo.appendChild(bloco('Foto DEPOIS', 'depois', 'escolher-depois'));
+    } else {
+      corpo.appendChild(bloco('Vídeo', 'video', 'escolher-video'));
+    }
+    corpo.appendChild(progresso);
+
+    function pintarCriar() {
+      var pronto = n.titulo.trim() !== '' && (comp ? (n.antes && n.depois) : n.video);
+      criar.disabled = !pronto;
+    }
+    criar.addEventListener('click', function () {
+      var t = n.titulo.trim();
+      if (!t) return;
+      var item = {
+        id: codigoNovo(comp ? 'cmp' : 'vid'), tipo: n.tipo, categoria: n.categoria,
+        em_resultados: true, ordem: proximaOrdem('ordem', function (i) { return i.categoria === n.categoria && i.em_resultados; }),
+        na_home: false, ordem_home: 0
+      };
+      if (comp) {
+        item.titulo = t;
+        item.antes = fotoNova(n.antes, t, 'antes');
+        item.antes.arquivo = n.antes.arquivo;
+        item.depois = fotoNova(n.depois, t, 'depois');
+      } else {
+        item.rotulo = t;
+        item.arquivo = n.video.arquivo;
+        item.poster = n.video.poster;
+        item.largura = n.video.largura;
+        item.altura = n.video.altura;
+      }
+      itensRes().push(item);
+      S.novo = null;
+      mudou('Criou ' + (comp ? 'um antes e depois' : 'um vídeo'));
+      S.aba = 'resultados';
+      S.cat = item.categoria;
+      ir('item', { id: item.id, lado: 'antes' });
+    });
+    corpo.appendChild(criar);
+    pintarCriar();
+    corpo.appendChild(h('p', { class: 'dica', text: 'Depois de criar, você ajusta o enquadramento e toca em Salvar no site.' }));
+    raiz.appendChild(corpo);
+  };
+
+  // --- Edição de um resultado ---
+  function caixaMarcar(id, texto, marcado, aoMudar) {
+    var c = h('input', { type: 'checkbox', id: id });
+    c.checked = !!marcado;
+    c.addEventListener('change', function () { aoMudar(c.checked); });
+    return h('label', { class: 'marcar', attrs: { for: id } }, c, h('span', { text: texto }));
+  }
+
+  /** Prévia igual à do site: mesmas medidas, cores e a barra de comparar. */
+  function montarPrevia(id) {
+    function lado(nome) { var i = buscar(id); return i ? i[nome] : null; }
+    var imgDepois = h('img', { alt: '' });
+    var imgAntes = h('img', { alt: '' });
+    var clip = h('div', { class: 'ba-clip site-clip' }, imgAntes, h('span', { class: 'site-etq site-antes', text: 'Antes' }));
+    var linha = h('div', { class: 'ba-line site-linha' });
+    var barra = h('input', { type: 'range', class: 'site-barra', attrs: { min: '0', max: '100', value: '50', 'aria-label': 'Comparar antes e depois' } });
+    barra.addEventListener('input', function () {
+      clip.style.clipPath = 'inset(0 ' + (100 - barra.value) + '% 0 0)';
+      linha.style.left = barra.value + '%';
+    });
+    var quadro = h('div', { class: 'site-quadro', id: 'previa-site' }, imgDepois, h('span', { class: 'site-etq site-depois', text: 'Depois' }), clip, linha, barra);
+    function pintar() {
+      var a = lado('antes'), d = lado('depois');
+      if (!a || !d) return;
+      imgAntes.src = urlFoto(a.arquivo);
+      imgDepois.src = urlFoto(d.arquivo);
+      aplicarEnq(imgAntes, enqEfetivo(a));
+      aplicarEnq(imgDepois, enqEfetivo(d));
+    }
+    pintar();
+    return { el: quadro, pintar: pintar };
+  }
+
+  /** Quadro de edição: 1 dedo arrasta, 2 dedos aumentam/diminuem. */
+  function montarEditor(id, nomeLado, aoMudar) {
+    function lado() { var i = buscar(id); return i ? i[nomeLado] : null; }
+    var img = h('img', { alt: '', class: 'foto-edicao', attrs: { draggable: 'false' } });
+    var quadro = h('div', { class: 'quadro', id: 'quadro-edicao', attrs: { role: 'img', 'aria-label': 'Foto ' + (nomeLado === 'antes' ? 'ANTES' : 'DEPOIS') + '. Arraste para mover. Use dois dedos para aumentar.' } }, img);
+    var rotuloZoom = h('p', { class: 'zoom-valor', id: 'zoom-valor', attrs: { role: 'status' } });
+    var faixa = h('input', { type: 'range', id: 'zoom', attrs: { min: '100', step: '1', 'aria-label': 'Zoom da foto' } });
+    var menos = h('button', { class: 'botao', type: 'button', id: 'zoom-menos', text: '−', attrs: { 'aria-label': 'Diminuir a foto' } });
+    var mais = h('button', { class: 'botao', type: 'button', id: 'zoom-mais', text: '+', attrs: { 'aria-label': 'Aumentar a foto' } });
+    var auto = h('button', { class: 'botao botao-leve', type: 'button', id: 'voltar-auto', text: 'Voltar ao automático' });
+
+    function pintar() {
+      var l = lado();
+      if (!l) return;
+      img.src = urlFoto(l.arquivo);
+      var e = enqEfetivo(l);
+      aplicarEnq(img, e);
+      var zmax = Math.floor(zoomMax(l) * 100);
+      faixa.max = String(zmax);
+      faixa.value = String(Math.round(zoomAtual(l) * 100));
+      rotuloZoom.textContent = 'Zoom: ' + Math.round(zoomAtual(l) * 100) + '%' + (l.enquadramento && l.enquadramento.automatico ? ' (automático)' : '');
+      auto.disabled = !!(l.enquadramento && l.enquadramento.automatico);
+    }
+    function mexeu() { pintar(); aoMudar(); }
+    function zoomPara(z) {
+      var l = lado();
+      if (!l) return;
+      aplicarZoom(l, z);
+      mexeu();
+    }
+    faixa.addEventListener('input', function () { zoomPara(Number(faixa.value) / 100); });
+    menos.addEventListener('click', function () { var l = lado(); if (l) zoomPara(zoomAtual(l) - 0.1); });
+    mais.addEventListener('click', function () { var l = lado(); if (l) zoomPara(zoomAtual(l) + 0.1); });
+    auto.addEventListener('click', function () {
+      var l = lado();
+      if (!l) return;
+      l.enquadramento = enqAuto(l.largura, l.altura);
+      mexeu();
+    });
+
+    // Gestos (Pointer Events: funciona igual com dedo, mouse e caneta)
+    var dedos = {};
+    var pinca = null;
+    function contar2() { return Object.keys(dedos).length; }
+    function distancia() {
+      var k = Object.keys(dedos);
+      var a = dedos[k[0]], b = dedos[k[1]];
+      return Math.sqrt(Math.pow(a.x - b.x, 2) + Math.pow(a.y - b.y, 2));
+    }
+    quadro.addEventListener('pointerdown', function (ev) {
+      try { quadro.setPointerCapture(ev.pointerId); } catch (x) { /* ponteiro de teste */ }
+      dedos[ev.pointerId] = { x: ev.clientX, y: ev.clientY };
+      if (contar2() === 2) {
+        var l = lado();
+        pinca = { d: Math.max(distancia(), 1), z: l ? zoomAtual(l) : 1 };
+      }
+      quadro.classList.add('mexendo');
+      ev.preventDefault();
+    });
+    quadro.addEventListener('pointermove', function (ev) {
+      var p = dedos[ev.pointerId];
+      var l = lado();
+      if (!p || !l) return;
+      if (contar2() === 1) {
+        var r = quadro.getBoundingClientRect();
+        var e = enqEfetivo(l);
+        l.enquadramento = enqLimitar({
+          width: e.width, height: e.height,
+          left: e.left + (ev.clientX - p.x) / r.width * 100,
+          top: e.top + (ev.clientY - p.y) / r.height * 100,
+          automatico: false
+        });
+        dedos[ev.pointerId] = { x: ev.clientX, y: ev.clientY };
+        mexeu();
+      } else if (contar2() === 2 && pinca) {
+        dedos[ev.pointerId] = { x: ev.clientX, y: ev.clientY };
+        aplicarZoom(l, pinca.z * distancia() / pinca.d);
+        mexeu();
+      }
+      ev.preventDefault();
+    });
+    function soltou(ev) {
+      delete dedos[ev.pointerId];
+      pinca = null;
+      if (contar2() === 0) quadro.classList.remove('mexendo');
+    }
+    quadro.addEventListener('pointerup', soltou);
+    quadro.addEventListener('pointercancel', soltou);
+    quadro.addEventListener('lostpointercapture', soltou);
+
+    pintar();
+    var el = h('div', { class: 'editor-quadro' },
+      quadro,
+      h('p', { class: 'dica', text: 'Arraste com um dedo para mover a foto. Use dois dedos para aumentar ou diminuir.' }),
+      h('div', { class: 'zoom-linha' }, menos, faixa, mais),
+      rotuloZoom,
+      auto);
+    return { el: el, pintar: pintar };
+  }
+
+  TELAS.item = function (raiz) {
+    var a = S.arg || {};
+    var item = buscar(a.id);
+    if (!item) { ir('resultados'); return; }
+    var comp = item.tipo === 'comparacao';
+    raiz.appendChild(topo(comp ? 'Editar antes e depois' : item.tipo === 'video' ? 'Editar vídeo' : 'Editar foto', 'resultados'));
+    var corpo = h('main', { id: 'conteudo-tela' });
+    var idx = indiceDe(item.id);
+    var base = 'resultados.itens.' + idx;
+    var progresso = h('p', { class: 'dica', id: 'progresso-midia', attrs: { role: 'status' } });
+    var pintarTodos = function () {};
+
+    corpo.appendChild(campoTexto(base + (comp ? '.titulo' : '.rotulo'), {
+      rotulo: comp ? 'Nome do tratamento' : 'Texto no canto', dica: comp ? 'Aparece embaixo da comparação, no site.' : 'Aparece no canto do ' + (item.tipo === 'video' ? 'vídeo' : 'resultado') + '.',
+      max: comp ? 80 : 40, aoMudar: function () { mudou('Mudou ' + nomeItem(item)); }
+    }));
+
+    var sel = h('select', { id: 'item-categoria' });
+    categoriasOrd().forEach(function (c) { sel.appendChild(h('option', { value: c.id, text: c.nome })); });
+    sel.value = item.categoria;
+    sel.addEventListener('change', function () {
+      item.categoria = sel.value;
+      item.ordem = proximaOrdem('ordem', function (i) { return i !== item && i.categoria === item.categoria && i.em_resultados; });
+      S.cat = item.categoria;
+      mudou('Mudou ' + nomeItem(item));
+    });
+    corpo.appendChild(h('label', { text: 'Categoria', attrs: { for: 'item-categoria' } }));
+    corpo.appendChild(sel);
+
+    corpo.appendChild(h('p', { class: 'rotulo', text: 'Onde aparece no site' }));
+    corpo.appendChild(caixaMarcar('item-em-resultados', 'Na página de resultados', item.em_resultados, function (v) {
+      item.em_resultados = v;
+      if (v) item.ordem = proximaOrdem('ordem', function (i) { return i !== item && i.categoria === item.categoria && i.em_resultados; });
+      mudou('Mudou onde aparece ' + nomeItem(item));
+    }));
+    if (comp) {
+      corpo.appendChild(caixaMarcar('item-na-home', 'Na página inicial (aparecem só os ' + LIMITE_HOME + ' primeiros)', item.na_home, function (v) {
+        item.na_home = v;
+        if (v) item.ordem_home = proximaOrdem('ordem_home', function (i) { return i !== item && i.na_home; });
+        mudou('Mudou onde aparece ' + nomeItem(item));
+      }));
+    }
+
+    if (comp) {
+      var lado = a.lado === 'antes' ? 'antes' : 'depois';
+      var abas = h('div', { class: 'abas', attrs: { role: 'tablist' } });
+      [['antes', 'Foto ANTES'], ['depois', 'Foto DEPOIS']].forEach(function (p) {
+        abas.appendChild(h('button', {
+          class: 'aba' + (lado === p[0] ? ' ativa' : ''), type: 'button', id: 'aba-' + p[0], text: p[1],
+          attrs: { role: 'tab', 'aria-selected': lado === p[0] ? 'true' : 'false' },
+          on: { click: function () { S.arg = { id: item.id, lado: p[0] }; desenhar(); } }
+        }));
+      });
+      corpo.appendChild(h('h2', { text: 'Enquadramento' }));
+      corpo.appendChild(abas);
+      var previa = montarPrevia(item.id);
+      var ed = montarEditor(item.id, lado, function () {
+        mudou('Mudou o enquadramento de ' + nomeItem(item));
+        previa.pintar();
+      });
+      corpo.appendChild(ed.el);
+      corpo.appendChild(h('button', { class: 'botao botao-bloco', type: 'button', id: 'trocar-foto', text: 'Trocar esta foto', on: { click: function () {
+        pedirMidia('foto', progresso, function (r) {
+          var velho = item[lado] || {};
+          item[lado] = { arquivo: r.arquivo, largura: r.largura, altura: r.altura, alt: velho.alt || (nomeItem(item) + ' — ' + lado + ' do tratamento'), enquadramento: enqAuto(r.largura, r.altura) };
+          mudou('Trocou a foto de ' + nomeItem(item));
+          desenhar();
+        });
+      } } }));
+      corpo.appendChild(progresso);
+      corpo.appendChild(h('h2', { text: 'Como fica no site' }));
+      corpo.appendChild(h('p', { class: 'dica', text: 'Arraste a barra para comparar, igual ao site.' }));
+      corpo.appendChild(previa.el);
+      pintarTodos = function () { ed.pintar(); previa.pintar(); };
+    } else if (item.tipo === 'video') {
+      corpo.appendChild(h('img', { class: 'miniatura grande', src: urlFoto(item.poster), alt: 'Capa do vídeo' }));
+      corpo.appendChild(h('button', { class: 'botao botao-bloco', type: 'button', id: 'trocar-video', text: 'Trocar o vídeo', on: { click: function () {
+        pedirMidia('video', progresso, function (r) {
+          item.arquivo = r.arquivo; item.poster = r.poster; item.largura = r.largura; item.altura = r.altura;
+          mudou('Trocou o vídeo ' + nomeItem(item));
+          desenhar();
+        });
+      } } }));
+      corpo.appendChild(progresso);
+    } else {
+      corpo.appendChild(h('img', { class: 'miniatura grande', src: urlFoto(item.arquivo), alt: '' }));
+      corpo.appendChild(h('button', { class: 'botao botao-bloco', type: 'button', id: 'trocar-foto', text: 'Trocar a foto', on: { click: function () {
+        pedirMidia('foto', progresso, function (r) {
+          item.arquivo = r.arquivo; item.largura = r.largura; item.altura = r.altura;
+          mudou('Trocou a foto ' + nomeItem(item));
+          desenhar();
+        });
+      } } }));
+      corpo.appendChild(progresso);
+    }
+    raiz.appendChild(corpo);
+    raiz.appendChild(barraAcao('Salvar no site'));
+  };
 
   /*@@TELAS*/
 
