@@ -90,7 +90,7 @@ t(strpos($sitemap, '<loc>' . $mh[1] . '</loc>') !== false && strpos($sitemap, '<
 t(substr_count($sitemap, '<loc>') === 2, 'sitemap tem só 2 URLs');
 $htaccess = (string) file_get_contents(RAIZ . '/.htaccess');
 t(strpos($htaccess, 'ErrorDocument 404 /404.php') !== false, '.htaccess aponta o 404 para 404.php');
-t(strpos($htaccess, 'index\.php$ / [R=301') !== false && strpos($htaccess, 'resultados\.php$ /resultados.html [R=301') !== false, '.htaccess: /index.php e /resultados.php dão 301');
+t(strpos($htaccess, 'index\.(html|php)$ / [R=301') !== false && strpos($htaccess, 'resultados\.php$ /resultados.html [R=301') !== false, '.htaccess: /index.php e /resultados.php dão 301');
 t(is_file(RAIZ . '/404.php'), '404.php existe');
 
 echo "\nT05 .htaccess e .user.ini\n";
@@ -102,6 +102,21 @@ t(strpos($htaccess, 'max-age=2592000') !== false && strpos($htaccess, '"no-cache
 t(preg_match('/\(nucleo\|parciais\|dados\|ferramentas/', $htaccess) === 1, 'pastas de código e dados bloqueadas na web');
 $ini = (string) file_get_contents(RAIZ . '/.user.ini');
 t(strpos($ini, 'upload_max_filesize=64M') !== false && strpos($ini, 'post_max_size=70M') !== false && strpos($ini, 'memory_limit=256M') !== false && strpos($ini, 'max_execution_time=120') !== false, '.user.ini com os 4 limites');
+
+echo "\nT14 conteudo/ sem execução e dados fora do public_html\n";
+$hc = (string) file_get_contents(RAIZ . '/conteudo/.htaccess');
+$hm = (string) file_get_contents(RAIZ . '/conteudo/midia/.htaccess');
+t(strpos($hc, 'Require all denied') !== false && strpos($hc, 'php_flag engine off') !== false && strpos($hc, 'RemoveHandler') !== false, 'conteudo/.htaccess nega scripts e desliga o PHP');
+t(strpos($hm, 'webp|jpe?g|png|mp4') !== false && strpos($hm, 'Require all denied') !== false, 'conteudo/midia/.htaccess só libera webp, jpg, png e mp4');
+t(strpos($hm, 'Options -ExecCGI -Indexes') !== false, 'conteudo/midia/.htaccess sem CGI e sem lista de arquivos');
+$ig = (string) shell_exec('git -C ' . escapeshellarg(RAIZ) . ' check-ignore conteudo/midia/.htaccess conteudo/midia/foto.webp 2>&1');
+t(strpos($ig, 'foto.webp') !== false && strpos($ig, 'midia/.htaccess') === false, '.gitignore deixa o .htaccess da mídia entrar e a mídia enviada fica de fora');
+config_definir(['senha_hash' => 'x', 'dados_dir' => sys_get_temp_dir() . '/dados-teste']);
+t(strpos(str_replace('\\', '/', config()['dados_dir']), str_replace('\\', '/', RAIZ)) !== 0, 'dados_dir de teste fica fora da pasta do site');
+config_definir(null);
+t(config()['dados_dir'] === '' || strpos(config()['dados_dir'], RAIZ) !== 0, 'padrão não coloca dados dentro do site');
+$cfg_php = (string) file_get_contents(RAIZ . '/nucleo/config.php');
+t(strpos($cfg_php, "dirname(RAIZ) . '/painel-config.php'") !== false, 'config de produção fica uma pasta acima do site');
 
 echo "\n";
 if ($falhas) {

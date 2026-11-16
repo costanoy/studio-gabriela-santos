@@ -1,0 +1,26 @@
+# Mídia enviada pelo painel: só imagem e vídeo são servidos. Todo o resto dá 403.
+# Cada envio tem um nome novo, por isso o cache pode ser de 1 ano.
+Options -ExecCGI -Indexes
+<IfModule mod_php.c>
+php_flag engine off
+</IfModule>
+<IfModule mod_php7.c>
+php_flag engine off
+</IfModule>
+<IfModule mod_php8.c>
+php_flag engine off
+</IfModule>
+RemoveHandler .php .phtml .php3 .php4 .php5 .php7 .php8 .phar .pl .py .cgi
+RemoveType .php .phtml .php3 .php4 .php5 .php7 .php8 .phar
+
+<FilesMatch "^(?!.*\.(webp|jpe?g|png|mp4)$).+$">
+Require all denied
+</FilesMatch>
+
+<IfModule mod_headers.c>
+Header always set X-Content-Type-Options "nosniff"
+Header always set Content-Security-Policy "default-src 'none'; sandbox"
+<FilesMatch "\.(webp|jpe?g|png|mp4)$">
+Header set Cache-Control "public, max-age=31536000, immutable"
+</FilesMatch>
+</IfModule>

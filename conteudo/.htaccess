@@ -1,0 +1,17 @@
+# Nada que esteja em conteudo/ é programa: nenhum script executa aqui, nem lista de arquivos.
+Options -ExecCGI -Indexes
+<IfModule mod_php.c>
+php_flag engine off
+</IfModule>
+<IfModule mod_php7.c>
+php_flag engine off
+</IfModule>
+<IfModule mod_php8.c>
+php_flag engine off
+</IfModule>
+RemoveHandler .php .phtml .php3 .php4 .php5 .php7 .php8 .phar .pl .py .cgi
+RemoveType .php .phtml .php3 .php4 .php5 .php7 .php8 .phar
+
+<FilesMatch "\.(php[0-9]*|phtml|phar|pl|py|cgi|sh|html?|svg|xml|js)$">
+Require all denied
+</FilesMatch>

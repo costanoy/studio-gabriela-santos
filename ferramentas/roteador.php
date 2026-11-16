@@ -81,6 +81,12 @@ if ($primeira === 'conteudo' && preg_match('#\.(php\d?|phtml|phar|pl|py|cgi|sh)$
     exit('Acesso negado.');
 }
 
+// Em conteudo/ só saem webp, jpg, png e mp4. Todo o resto (html, svg, js, sem extensão) dá 403
+if ($primeira === 'conteudo' && !preg_match('#\.(webp|jpe?g|png|mp4)$#i', $caminho)) {
+    http_response_code(403);
+    exit('Acesso negado.');
+}
+
 // PHP só executa dentro de painel/
 if (preg_match('#^/painel/.+\.php$#', $caminho) && is_file($arquivo)) {
     r_executar($arquivo);
