@@ -20,7 +20,7 @@ if ($pagina === 'home'): ?>
     </nav>
     <div id="header-right" style="display:flex; align-items:center; justify-content:flex-end; gap:14px; justify-self:center;">
       <a id="desktop-cta" href="<?= e($wa) ?>" target="_blank" rel="noopener" class="btn-fill" style="text-decoration:none; background:#7D5843; color:#FBF3EE; padding:11px 22px; border-radius:10px; font-weight:700; font-size:15px; letter-spacing:0.02em; white-space:nowrap; transition: background 0.2s ease;">Agendar horário</a>
-      <button id="nav-toggle" type="button" onclick="event.stopPropagation(); alternarMenu()" aria-label="Abrir menu" aria-expanded="false" aria-controls="mobile-nav-wrap" style="width:40px; height:40px; background:transparent; border:1.5px solid #F3E4DA; border-radius:10px; cursor:pointer; flex-direction:column; align-items:center; justify-content:center; gap:4px; flex-shrink:0;">
+      <button id="nav-toggle" type="button" onclick="event.stopPropagation(); alternarMenu()" aria-label="Abrir menu" aria-expanded="false" aria-controls="mobile-nav-wrap" style="width:44px; height:44px; background:transparent; border:1.5px solid #F3E4DA; border-radius:10px; cursor:pointer; flex-direction:column; align-items:center; justify-content:center; gap:4px; flex-shrink:0;">
         <span style="width:18px; height:1.5px; background:#F3E4DA; display:block;"></span>
         <span style="width:18px; height:1.5px; background:#F3E4DA; display:block;"></span>
         <span style="width:18px; height:1.5px; background:#F3E4DA; display:block;"></span>

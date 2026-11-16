@@ -236,6 +236,7 @@
     #footer-grid > div:first-child { display: flex; justify-content: center; }
     #footer-grid > div:first-child img { height: 130px !important; }
     #footer-menus, #footer-cursos { display: none !important; }
+    footer a { min-height: 44px; box-sizing: border-box; display: flex; align-items: center; }
     .mobile-scroll-arrow { display: flex !important; }
     #resultados-grid { display: flex !important; overflow-x: auto; scroll-snap-type: x proximity; -webkit-overflow-scrolling: touch; }
     #resultados-grid > * { flex: 0 0 78%; scroll-snap-align: start; }
