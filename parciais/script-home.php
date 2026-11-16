@@ -31,29 +31,24 @@ function goHomeMobile(e) {
   window.scrollTo({ top: 0, behavior: 'smooth' });
   history.replaceState(null, '', '#home');
 }
-const __carouselIdx = {};
+function cartaoAtual(grid) {
+  const cards = Array.from(grid.children).filter(function (c) { return c.offsetWidth > 0; });
+  const meio = grid.scrollLeft + grid.clientWidth / 2;
+  let idx = 0, melhor = Infinity;
+  cards.forEach(function (c, i) {
+    const d = Math.abs(c.offsetLeft + c.offsetWidth / 2 - meio);
+    if (d < melhor) { melhor = d; idx = i; }
+  });
+  return { cards: cards, idx: idx };
+}
 function scrollByCard(gridId, dir) {
   const grid = document.getElementById(gridId);
   if (!grid) return;
-  const cards = Array.from(grid.children);
-  if (!cards.length) return;
-  const curIdx = __carouselIdx[gridId] ?? 0;
-  const targetIdx = Math.min(cards.length - 1, Math.max(0, curIdx + dir));
-  __carouselIdx[gridId] = targetIdx;
-  grid.scrollTo({ left: cards[targetIdx].offsetLeft, behavior: 'smooth' });
+  const atual = cartaoAtual(grid);
+  if (!atual.cards.length) return;
+  const alvo = Math.min(atual.cards.length - 1, Math.max(0, atual.idx + dir));
+  grid.scrollTo({ left: atual.cards[alvo].offsetLeft, behavior: 'smooth' });
 }
-['procedimentos-grid', 'resultados-grid', 'depoimentos-grid'].forEach((gridId) => {
-  const grid = document.getElementById(gridId);
-  if (!grid) return;
-  grid.addEventListener('scrollend', () => {
-    const cards = Array.from(grid.children);
-    if (!cards.length) return;
-    const cur = grid.scrollLeft;
-    let idx = 0, best = Infinity;
-    cards.forEach((c, i) => { const d = Math.abs(c.offsetLeft - cur); if (d < best) { best = d; idx = i; } });
-    __carouselIdx[gridId] = idx;
-  }, { passive: true });
-});
 function toggleCurso(id, btn) {
   const el = document.getElementById(id);
   const open = el.style.display === 'grid';
