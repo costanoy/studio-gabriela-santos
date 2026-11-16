@@ -342,6 +342,38 @@ t(strpos($hs, '<script>alert(1)') === false && strpos($hs, '&lt;script&gt;alert(
 config_definir(null);
 conteudo_cache_limpar();
 
+echo "\nT08 dados do painel fora do public_html\n";
+$raiz_n = rtrim(str_replace('\\', '/', RAIZ), '/') . '/';
+$fora = static fn(string $p) => strpos(rtrim(str_replace('\\', '/', $p), '/') . '/', $raiz_n) !== 0;
+config_definir(array_merge($cfg_teste, ['midia_dir' => $midia_t, 'midia_url' => 'conteudo/midia']));
+$GLOBALS['__nucleo_teste'] = ['sem_exit' => true, 'agora' => 9000000];
+conteudo_cache_limpar();
+$tit = 'Título que sobrevive ' . bin2hex(random_bytes(2));
+$rev8 = (int) json_decode((string) file_get_contents($tmp . '/site.json'), true)['revisao'];
+$c8 = conteudo_padrao();
+$c8['seo']['titulo'] = $tit;
+$r8 = conteudo_salvar($c8, $rev8, 'T08');
+t($r8['ok'] === true, 'salvar pelo painel funciona com dados_dir fora do site');
+t($fora(config()['dados_dir']), 'dados_dir fica fora da pasta do site');
+t($fora($tmp . '/site.json') && is_file($tmp . '/site.json') && is_dir($tmp . '/historico') && is_dir($tmp . '/sessoes'), 'site.json, historico e sessoes ficam em dados_dir');
+$dentro = array_merge(glob(RAIZ . '/site.json') ?: [], glob(RAIZ . '/historico') ?: [], glob(RAIZ . '/lixeira') ?: [], glob(RAIZ . '/trava.lock') ?: [], glob(RAIZ . '/tentativas.json') ?: [], glob(RAIZ . '/sessoes') ?: []);
+t($dentro === [], 'nada do painel foi escrito dentro da pasta do site');
+// "publicar de novo": a pasta do site é trocada inteira; dados_dir e a mídia ficam
+$site_velho = $tmp . '/site';
+file_put_contents($site_velho . '/index.php', 'versao antiga');
+file_put_contents($midia_t . '/foto.webp', 'foto da dona');
+foreach (['index.php'] as $f) {
+    unlink($site_velho . '/' . $f);
+}
+file_put_contents($site_velho . '/index.php', 'versao nova');
+conteudo_cache_limpar();
+t(conteudo_ler()['seo']['titulo'] === $tit, 'depois de publicar de novo o conteúdo salvo continua');
+t(is_file($midia_t . '/foto.webp'), 'depois de publicar de novo a mídia continua');
+$tracked = (string) shell_exec('git -C ' . escapeshellarg(RAIZ) . ' ls-files 2>&1');
+t($tracked !== '' && !preg_match('#(^|/)(site\.json|trava\.lock|tentativas\.json|painel-config[^/]*\.php)$#m', $tracked) && !preg_match('#^(historico|lixeira|sessoes|\.local|publicar)/#m', $tracked), 'o git não rastreia dados do painel, config nem .local/');
+config_definir(null);
+conteudo_cache_limpar();
+
 // limpa a pasta temporária dos testes
 function limpar_pasta(string $d): void
 {
