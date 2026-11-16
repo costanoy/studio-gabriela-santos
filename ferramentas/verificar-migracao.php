@@ -178,7 +178,7 @@ if (is_file($raiz . '/nucleo/render.php')) {
             }
         }
         // Depois do L07 o rodapé usa o horário único do JSON ("das 8h às 17h").
-        if (strpos((string) @file_get_contents($raiz . '/parciais/rodape.php'), "contato']['horario'") !== false) {
+        if (strpos((string) @file_get_contents($raiz . '/parciais/rodape.php'), "['horario']") !== false) {
             $antigo = str_replace('Segunda à sexta, 8h às 17h', $c['contato']['horario'], $antigo);
         }
         $iguais = normalizar($novo) === normalizar($antigo);
@@ -218,7 +218,7 @@ if (is_file($raiz . '/nucleo/render.php')) {
         echo '  info formas do horário: ' . json_encode(array_values($formas), JSON_UNESCAPED_UNICODE) . "\n";
     }
     conferir(true, 'horário: ' . ($unificado ? 'uma forma só, igual ao JSON' : 'ainda com formas diferentes (L07 pendente)'));
-    $L07 = file_exists($raiz . '/parciais/rodape.php') && strpos((string) file_get_contents($raiz . '/parciais/rodape.php'), "contato']['horario'") !== false;
+    $L07 = file_exists($raiz . '/parciais/rodape.php') && strpos((string) file_get_contents($raiz . '/parciais/rodape.php'), "['horario']") !== false;
     if ($L07) {
         conferir($unificado, 'L07: horário igual em todas as ocorrências');
         $tel = preg_match_all('/\(62\) 98414-1116/', $home . $paginas['resultados']);

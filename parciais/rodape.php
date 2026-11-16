@@ -47,7 +47,7 @@ $menu = [['#home', 'Início'], ['#sobre', 'Sobre'], ['#procedimentos', 'Procedim
           </a>
           <p style="margin:0; color:#D8C4B8; font-size:<?= $tam ?>; display:flex; align-items:center; gap:10px;">
             <svg width="17" height="17" viewBox="0 0 24 24" fill="none" style="flex-shrink:0;"><circle cx="12" cy="12" r="8.5" stroke="#996C55" stroke-width="1.3"></circle><path d="M12 7.5V12l3 2" stroke="#996C55" stroke-width="1.3" stroke-linecap="round" stroke-linejoin="round"></path></svg>
-            Segunda à sexta, 8h às 17h
+            <?= e($ct['horario']) ?>
           </p>
         </div>
       </div>

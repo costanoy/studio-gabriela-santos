@@ -71,6 +71,15 @@ $c3 = $padrao;
 $c3['resultados']['itens'][0]['na_home'] = false;
 t(count(resultados_home($c3)) === 4, 'item com na_home falso sai da home');
 
+echo "\nL07 contato em um só lugar\n";
+$c4 = $padrao;
+$c4['contato']['horario'] = 'Horário de teste 9h';
+$c4['contato']['whatsapp'] = '5511999990000';
+$h4 = renderizar('home', $c4);
+t(substr_count($h4, 'Horário de teste 9h') === 1, 'horário do JSON aparece no rodapé');
+t(strpos($h4, '5562984141116') === false && strpos($h4, '5511999990000') !== false, 'link do WhatsApp usa contato.whatsapp');
+t(strpos($h4, '8h às 17h') === false, 'nenhum horário escrito à mão sobra');
+
 echo "\n";
 if ($falhas) {
     echo count($falhas) . " falha(s), $ok ok.\n";
