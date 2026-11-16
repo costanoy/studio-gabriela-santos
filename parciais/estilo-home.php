@@ -261,7 +261,7 @@
   #site-header.scrolled #logo-full { opacity: 0 !important; }
   #site-header.scrolled #logo-gs { opacity: 1 !important; }
   .nav-link:hover { color: #E7CDBE !important; }
-  .btn-fill:hover { background: #7d5843 !important; }
+  .btn-fill:hover { background: #6B4A39 !important; }
   .btn-outline:hover { background: rgba(243,228,218,0.18) !important; }
   .btn-outline-brown:hover { background: #F3E4DA !important; }
   .btn-lift:hover { transform: translateY(-2px); }

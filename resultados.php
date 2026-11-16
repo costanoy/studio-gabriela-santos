@@ -13,6 +13,7 @@ parcial('estilo-resultados');
 </head>
 <body>
 <?php parcial('cabecalho', $vars); ?>
+<main id="conteudo">
 
   <section style="padding: 72px 5% 40px; text-align:center;">
     <p style="font-size:13px; letter-spacing:0.15em; text-transform:uppercase; color:#996C55; font-weight:700; margin:0 0 14px;">Transformações reais</p>
@@ -40,6 +41,7 @@ parcial('estilo-resultados');
   </section>
 
 <?php endforeach; ?>
+</main>
 <?php parcial('rodape', $vars); ?>
 <?php parcial('script-resultados'); ?>
 

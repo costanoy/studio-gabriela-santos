@@ -25,6 +25,7 @@ parcial('estilo-home');
 </head>
 <body>
 <?php parcial('cabecalho', $vars); ?>
+<main id="conteudo">
 
   <section id="home" style="position:relative; min-height: 92vh; display:flex; align-items:center; padding: 0 5%; box-sizing:border-box;">
     <div style="position:absolute; inset:0; z-index:0; overflow:hidden; background:#996C55;">
@@ -275,6 +276,7 @@ parcial('estilo-home');
     </div>
   </section>
 
+</main>
 <?php parcial('rodape', $vars); ?>
 <?php parcial('script-home'); ?>
 
