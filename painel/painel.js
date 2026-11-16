@@ -1370,6 +1370,7 @@
       });
     });
   };
+  CARTOES.push({ id: 'cartao-ajuda', icone: '❓', titulo: 'Ajuda', texto: 'Passo a passo para usar o painel', href: 'ajuda.php' });
   CARTOES.push({ id: 'cartao-lixeira', icone: '🗑️', titulo: 'Lixeira', texto: 'Trazer de volta fotos e vídeos', ir: function () { ir('lixeira'); } });
 
   /*@@TELAS*/

@@ -49,6 +49,10 @@ p { margin: 0 0 12px; }
 .botao-perigo { background: var(--erro); border-color: var(--erro); color: #fff; }
 .botao[disabled] { opacity: .5; cursor: not-allowed; }
 .botao-bloco { display: flex; width: 100%; }
+a.botao { text-decoration: none; }
+.ajuda-secao { margin: 0 0 20px; }
+.ajuda-passos { margin: 0; padding-left: 26px; font-size: 17px; line-height: 1.5; }
+.ajuda-passos li { margin: 0 0 8px; }
 .botao-apagar { color: var(--erro); border-color: var(--erro); background: #fff; }
 
 /* Campos */

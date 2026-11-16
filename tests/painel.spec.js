@@ -783,4 +783,101 @@ test.describe('P4 mensagens', () => {
   });
 });
 
+// ===========================================================================
+// P5: ajustes para iPhone e página de ajuda
+// ===========================================================================
+/** Confere a tela aberta: alvos de toque, tamanho da letra dos campos e rolagem lateral. */
+async function auditarTela(page) {
+  return page.evaluate(() => {
+    const visivel = (el) => {
+      const r = el.getBoundingClientRect();
+      const cs = getComputedStyle(el);
+      return r.width > 0 && r.height > 0 && cs.visibility !== 'hidden' && cs.display !== 'none';
+    };
+    const pequenos = [];
+    document.querySelectorAll('button, a[href], summary, select, input:not([type=checkbox]):not([type=radio]):not([type=hidden]):not([type=range]), textarea').forEach((el) => {
+      if (!visivel(el) || el.closest('.previa, .site-previa, [data-previa]')) return;
+      const r = el.getBoundingClientRect();
+      if (r.height < 44 || r.width < 44) pequenos.push((el.id || el.className || el.tagName) + ' ' + Math.round(r.width) + 'x' + Math.round(r.height));
+    });
+    const letra = [];
+    document.querySelectorAll('input:not([type=checkbox]):not([type=radio]):not([type=hidden]):not([type=range]), select, textarea').forEach((el) => {
+      if (!visivel(el)) return;
+      const f = parseFloat(getComputedStyle(el).fontSize);
+      if (f < 16) letra.push((el.id || el.tagName) + ' ' + f);
+    });
+    const doc = document.documentElement;
+    return { pequenos, letra, larguraExtra: doc.scrollWidth - window.innerWidth };
+  });
+}
+
+test.describe('P5 iPhone e ajuda', () => {
+  test('telas principais têm alvos ≥44 px, letra ≥16 px nos campos e sem rolagem lateral', async ({ page }, info) => {
+    await entrar(page);
+    const conferir = async (nome) => {
+      const a = await auditarTela(page);
+      expect(a.pequenos, nome + ': alvos pequenos').toEqual([]);
+      expect(a.letra, nome + ': letra pequena').toEqual([]);
+      expect(a.larguraExtra, nome + ': rolagem lateral').toBeLessThanOrEqual(0);
+    };
+    await conferir('início');
+    await page.click('#cartao-textos');
+    await abrirGrupo(page, 'topo');
+    await conferir('textos');
+    await page.click('header.topo .botao');
+    await page.click('#cartao-resultados');
+    await expect(page.locator('#lista-resultados')).toBeVisible();
+    await conferir('resultados');
+    const id = await page.locator('#lista-resultados .linha-res').first().getAttribute('data-id');
+    await page.locator('[data-id="' + id + '"]').getByRole('button', { name: /^Editar/ }).click();
+    await expect(page.locator('#quadro-edicao')).toBeVisible();
+    await conferir('editar item');
+    await page.screenshot({ path: info.outputPath('painel-editar-' + info.project.name + '.png'), fullPage: false });
+    await page.click('header.topo .botao');
+    await page.click('header.topo .botao');
+    await page.click('#cartao-versoes');
+    await expect(page.locator('#lista-versoes .versao').first()).toBeVisible();
+    await conferir('versões');
+    await page.click('header.topo .botao');
+    await page.click('#cartao-lixeira');
+    await expect(page.locator('#lista-lixeira')).toBeVisible();
+    await conferir('lixeira');
+  });
+
+  test('a barra de salvar respeita a área segura do iPhone', async ({ page }) => {
+    await entrar(page);
+    await page.click('#cartao-textos');
+    const css = await page.evaluate(() => {
+      const b = document.querySelector('.barra-acao');
+      const p = getComputedStyle(b);
+      return { fixa: p.position, rodape: b.getBoundingClientRect().bottom <= window.innerHeight + 1 };
+    });
+    expect(css.fixa).toBe('fixed');
+    expect(css.rodape).toBe(true);
+    const fonte = await (await page.request.get('/painel/painel.css')).text();
+    expect(fonte).toContain('env(safe-area-inset-bottom)');
+    expect(await page.locator('meta[name=viewport]').getAttribute('content')).toContain('viewport-fit=cover');
+  });
+
+  test('a página de ajuda abre pelo cartão, tem os passos e volta ao painel', async ({ page }, info) => {
+    await entrar(page);
+    await page.click('#cartao-ajuda');
+    await expect(page).toHaveURL(/\/painel\/ajuda\.php/);
+    await expect(page.locator('h1')).toHaveText('Ajuda');
+    await expect(page.locator('.ajuda-secao')).toHaveCount(7);
+    await expect(page.locator('body')).toContainText('Desfazer');
+    const a = await auditarTela(page);
+    expect(a.pequenos).toEqual([]);
+    expect(a.larguraExtra).toBeLessThanOrEqual(0);
+    await page.screenshot({ path: info.outputPath('painel-ajuda-' + info.project.name + '.png'), fullPage: true });
+    await page.click('#ajuda-voltar');
+    await expect(page.locator('#sair')).toBeVisible();
+  });
+
+  test('a ajuda sem entrar manda para o login', async ({ page }) => {
+    await page.goto('/painel/ajuda.php');
+    await expect(page.locator('#senha')).toBeVisible();
+  });
+});
+
 // @@FIM
