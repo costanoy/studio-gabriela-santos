@@ -66,7 +66,7 @@ $primeira = explode('/', ltrim($caminho, '/'))[0] ?? '';
 if (in_array($primeira, $bloqueados, true)) {
     r_404();
 }
-if (preg_match('#(^|/)(package(-lock)?\.json|\.htaccess|\.user\.ini|painel-config[^/]*\.php)$#i', $caminho)) {
+if (preg_match('#(^|/)(package(-lock)?\.json|playwright\.config\.js|\.htaccess|\.user\.ini|painel-config[^/]*\.php)$#i', $caminho)) {
     r_404();
 }
 if (preg_match('#\.md$#i', $caminho) && $primeira !== '.auditoria') {
