@@ -162,4 +162,109 @@ test.describe('T11 casca, CSP e login', () => {
   });
 });
 
+// ===========================================================================
+// P6: edição de textos com limites e contadores
+// ===========================================================================
+async function abrirGrupo(page, id) {
+  if (!(await page.locator('#conteudo-tela').count())) await page.click('#cartao-textos');
+  const det = page.locator('#grupo-' + id);
+  if (!(await det.evaluate((d) => d.open))) await det.locator('summary').click();
+  await expect(det).toHaveJSProperty('open', true);
+  return det;
+}
+
+test.describe('P6 textos com limites', () => {
+  test('o contador mostra "n de limite" e o campo não passa do limite', async ({ page }) => {
+    await entrar(page);
+    const det = await abrirGrupo(page, 'topo');
+    const campo = det.locator('[data-caminho="home.hero.titulo"]');
+    const entrada = campo.locator('input');
+    await entrada.fill('Studio ' + 'x'.repeat(100));
+    expect((await entrada.inputValue()).length).toBe(80);
+    await expect(campo.locator('.contador')).toHaveText('80 de 80 (limite)');
+    await entrada.fill('Oi');
+    await expect(campo.locator('.contador')).toHaveText('2 de 80');
+    // emoji conta como uma letra, como no servidor
+    await entrada.fill('Oi 😀');
+    await expect(campo.locator('.contador')).toHaveText('4 de 80');
+    const texto = det.locator('[data-caminho="home.hero.texto"] textarea');
+    await texto.fill('y'.repeat(700));
+    expect((await texto.inputValue()).length).toBe(600);
+  });
+
+  test('editar, salvar e ver no site; o botão Salvar só liga depois de mudar algo', async ({ page }) => {
+    await entrar(page);
+    const det = await abrirGrupo(page, 'topo');
+    await expect(page.locator('#salvar')).toBeDisabled();
+    await det.locator('[data-caminho="home.hero.titulo"] input').fill('Meu novo título');
+    await expect(page.locator('#salvar')).toBeEnabled();
+    await expect(det.locator('.previa-titulo')).toHaveText('Meu novo título');
+    await page.click('#salvar');
+    await expect(page.locator('.toast')).toContainText('Salvo no site');
+    await expect(page.locator('#salvar')).toBeDisabled();
+    await page.goto('/');
+    await expect(page.locator('h1').first()).toContainText('Meu novo título');
+  });
+
+  test('campo obrigatório vazio mostra aviso perto do campo e não salva', async ({ page }) => {
+    await entrar(page);
+    const det = await abrirGrupo(page, 'topo');
+    await det.locator('[data-caminho="home.hero.titulo"] input').fill('');
+    await page.click('#salvar');
+    await expect(det.locator('[data-caminho="home.hero.titulo"] .msg-campo')).toContainText('não pode ficar vazio');
+    const lido = await chamar(page, { acao: 'ler' });
+    expect(lido.revisao).toBe(0);
+    expect(lido.conteudo.home.hero.titulo.length).toBeGreaterThan(0);
+  });
+
+  test('WhatsApp aceita só números e mostra aviso se faltar número', async ({ page }) => {
+    await entrar(page);
+    const det = await abrirGrupo(page, 'contato');
+    const zap = det.locator('[data-caminho="contato.whatsapp"] input');
+    await zap.fill('(62) 9 8414-1116');
+    expect(await zap.inputValue()).toBe('62984141116');
+    await zap.fill('6298');
+    await page.click('#salvar');
+    await expect(det.locator('[data-caminho="contato.whatsapp"] .msg-campo')).toContainText('Digite só números');
+  });
+
+  test('endereço: cada linha vira um item, no máximo 6 linhas', async ({ page }) => {
+    await entrar(page);
+    const det = await abrirGrupo(page, 'contato');
+    const area = det.locator('[data-caminho="contato.endereco_linhas"] textarea');
+    await area.fill('Rua A\nRua B\nRua C\nRua D\nRua E\nRua F\nRua G');
+    expect((await area.inputValue()).split('\n').length).toBe(6);
+    await page.click('#salvar');
+    await expect(page.locator('.toast')).toContainText('Salvo no site');
+    const lido = await chamar(page, { acao: 'ler' });
+    expect(lido.conteudo.contato.endereco_linhas).toEqual(['Rua A', 'Rua B', 'Rua C', 'Rua D', 'Rua E', 'Rua F']);
+  });
+
+  test('o servidor também recusa texto acima do limite', async ({ page }) => {
+    await entrar(page);
+    const lido = await chamar(page, { acao: 'ler' });
+    lido.conteudo.home.hero.titulo = 'z'.repeat(81);
+    const r = await chamar(page, { acao: 'salvar', conteudo: lido.conteudo, revisao: lido.revisao });
+    expect(r.status).toBe(422);
+    expect(r.detalhes[0].campo).toBe('home.hero.titulo');
+  });
+
+  test('adicionar e reordenar depoimentos', async ({ page }) => {
+    await entrar(page);
+    const det = await abrirGrupo(page, 'depoimentos');
+    const antes = await det.locator('fieldset.item-lista').count();
+    await det.getByRole('button', { name: '+ Adicionar depoimento' }).click();
+    await expect(det.locator('fieldset.item-lista')).toHaveCount(antes + 1);
+    const ultimo = det.locator('fieldset.item-lista').last();
+    await ultimo.locator('textarea').fill('Adorei o atendimento!');
+    await ultimo.getByRole('button', { name: /Subir Depoimento/ }).click();
+    await expect(det.locator('fieldset.item-lista').nth(antes - 1).locator('textarea')).toHaveValue('Adorei o atendimento!');
+    await page.click('#salvar');
+    await expect(page.locator('.toast')).toContainText('Salvo no site');
+    const lido = await chamar(page, { acao: 'ler' });
+    expect(lido.conteudo.home.depoimentos.itens.length).toBe(antes + 1);
+    expect(lido.conteudo.home.depoimentos.itens[antes - 1].texto).toBe('Adorei o atendimento!');
+  });
+});
+
 // @@FIM
