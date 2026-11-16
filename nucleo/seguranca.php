@@ -139,7 +139,30 @@ function cabecalhos_painel_lista(): array
         'X-Robots-Tag: noindex, nofollow',
         'Cache-Control: no-store',
         'X-Content-Type-Options: nosniff',
+        // Só código do próprio site. Sem scripts ou estilos escritos na página (nada de inline).
+        "Content-Security-Policy: default-src 'self'; img-src 'self' blob: data:; media-src 'self' blob:; script-src 'self'; style-src 'self'; frame-ancestors 'none'",
     ];
+}
+
+/** Código de proteção da sessão. A página do painel o recebe e o devolve no cabeçalho X-CSRF. */
+function csrf_token(): string
+{
+    sessao_iniciar();
+    if (empty($_SESSION['csrf']) || !is_string($_SESSION['csrf'])) {
+        $_SESSION['csrf'] = bin2hex(random_bytes(32));
+    }
+    return $_SESSION['csrf'];
+}
+
+/** Barra com 403 todo pedido que muda dados sem o X-CSRF certo. Chame depois de exigir_login_api(). */
+function csrf_verificar(): void
+{
+    $enviado = (string) ($_SERVER['HTTP_X_CSRF'] ?? '');
+    sessao_iniciar();
+    $esperado = (string) ($_SESSION['csrf'] ?? '');
+    if ($esperado === '' || $enviado === '' || !hash_equals($esperado, $enviado)) {
+        responder_json(['ok' => false, 'erro' => 'csrf'], 403);
+    }
 }
 
 function cabecalhos_painel(): void

@@ -220,6 +220,51 @@ t(strpos((string) file_get_contents($tmp . '/tentativas.json'), '203.0.113.50') 
 unset($_SERVER['REMOTE_ADDR'], $_SERVER['HTTP_X_FORWARDED_FOR']);
 config_definir(null);
 
+echo "\nT11 CSRF, CSP e escape\n";
+config_definir($cfg_teste);
+$GLOBALS['__nucleo_teste'] = ['sem_exit' => true, 'agora' => 7000000];
+$_SERVER['REMOTE_ADDR'] = '203.0.113.77';
+sessao_entrar($senha_teste);
+$token = csrf_token();
+t(strlen($token) === 64 && csrf_token() === $token, 'csrf_token gera 64 caracteres e é estável na sessão');
+unset($_SERVER['HTTP_X_CSRF']);
+try {
+    csrf_verificar();
+    t(false, 'POST sem X-CSRF dá 403');
+} catch (RespostaJson $x) {
+    t($x->status === 403, 'POST sem X-CSRF dá 403');
+}
+$_SERVER['HTTP_X_CSRF'] = 'errado';
+try {
+    csrf_verificar();
+    t(false, 'POST com X-CSRF errado dá 403');
+} catch (RespostaJson $x) {
+    t($x->status === 403, 'POST com X-CSRF errado dá 403');
+}
+$_SERVER['HTTP_X_CSRF'] = $token;
+$passou = true;
+try {
+    csrf_verificar();
+} catch (RespostaJson $x) {
+    $passou = false;
+}
+t($passou, 'POST com o X-CSRF certo passa');
+$cab = implode("\n", cabecalhos_painel_lista());
+t(strpos($cab, "script-src 'self'") !== false && strpos($cab, "frame-ancestors 'none'") !== false && strpos($cab, "style-src 'self'") !== false && strpos($cab, "img-src 'self' blob: data:") !== false && strpos($cab, "media-src 'self' blob:") !== false, 'CSP do painel sem inline e sem iframe');
+sessao_sair();
+unset($_SERVER['HTTP_X_CSRF'], $_SERVER['REMOTE_ADDR']);
+
+$xss = '<script>alert(1)</script><img src=x onerror=alert(2)>';
+$cx = $padrao;
+$cx['contato']['endereco_curto'] = $xss;
+$cx['contato']['horario'] = $xss;
+$cx['seo']['titulo'] = $xss;
+$cx['seo']['descricao'] = $xss;
+$hx = renderizar('home', $cx);
+t(strpos($hx, '<script>alert(1)') === false && strpos($hx, '<img src=x') === false, 'payload XSS nos textos sai escapado, sem tag ativa');
+t(strpos($hx, '&lt;script&gt;alert(1)') !== false, 'o payload aparece como texto escapado');
+config_definir(null);
+
 // limpa a pasta temporária dos testes
 function limpar_pasta(string $d): void
 {
