@@ -20,6 +20,7 @@ parcial('estilo-resultados');
     <h1 style="font-family:'Marcellus', serif; font-size: clamp(32px, 4vw, 48px); margin:0; color:#3A2A22;">Todos os resultados</h1>
   </section>
 
+<?php $primeira_foto = false; ?>
 <?php foreach (resultados_por_categoria($c) as $grupo): ?>
   <section style="padding: 0 5% 90px;">
     <div style="max-width:1280px; margin:0 auto;">
@@ -28,7 +29,7 @@ parcial('estilo-resultados');
 <?php foreach ($grupo['itens'] as $item): ?>
 <?php if ($item['tipo'] === 'comparacao'): ?>
         <div>
-<?php parcial('comparador', ['item' => $item]); ?>
+<?php parcial('comparador', ['item' => $item, 'prioridade' => !$primeira_foto]); $primeira_foto = true; ?>
         </div>
 <?php elseif ($item['tipo'] === 'video'): ?>
 <?php parcial('video', ['item' => $item, 'categoria' => $grupo['categoria']['nome']]); ?>
