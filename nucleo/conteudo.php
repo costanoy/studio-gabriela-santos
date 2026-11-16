@@ -373,10 +373,12 @@ function conteudo_validar(array $c): array
                         }
                     }
                     $tol = 0.0011;
+                    // Posição: 0,05 ponto de folga (invisível). O ajuste à mão do site antigo passa em 0,039.
+                    $tolp = 0.05;
                     if ($e['width'] < ENQUADRAMENTO_MIN - $tol || $e['width'] > ENQUADRAMENTO_MAX + $tol
                         || $e['height'] < ENQUADRAMENTO_MIN - $tol || $e['height'] > ENQUADRAMENTO_MAX + $tol) {
                         $erro("$p.$lado.enquadramento", 'O zoom da foto precisa ficar entre 100% e 400%.');
-                    } elseif (abs($e['left'] - 50) > ($e['width'] - 100) / 2 + $tol || abs($e['top'] - 50) > ($e['height'] - 100) / 2 + $tol) {
+                    } elseif (abs($e['left'] - 50) > ($e['width'] - 100) / 2 + $tolp || abs($e['top'] - 50) > ($e['height'] - 100) / 2 + $tolp) {
                         $erro("$p.$lado.enquadramento", 'A foto saiu do quadro. Volte ao automático ou arraste de volta.');
                     }
                 }
@@ -401,4 +403,265 @@ function conteudo_validar(array $c): array
     }
 
     return $erros;
+}
+
+// ---------------------------------------------------------------------------
+// Salvar, histórico e lixeira (L14)
+// ---------------------------------------------------------------------------
+
+function conteudo_json(array $dados): string
+{
+    return json_encode($dados, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES | JSON_PRETTY_PRINT | JSON_PARTIAL_OUTPUT_ON_ERROR) ?: '{}';
+}
+
+/** Grava por um arquivo temporário e troca de nome: ninguém lê um arquivo pela metade. */
+function conteudo_gravar_atomico(string $arquivo, string $texto): bool
+{
+    $tmp = $arquivo . '.tmp' . bin2hex(random_bytes(3));
+    if (file_put_contents($tmp, $texto, LOCK_EX) === false) {
+        return false;
+    }
+    if (!@rename($tmp, $arquivo)) {
+        @unlink($tmp);
+        return false;
+    }
+    return true;
+}
+
+/** Caminho no disco de uma mídia de conteudo/midia/. Devolve null para qualquer outra coisa (assets/, "..", etc.). */
+function midia_caminho(string $arquivo): ?string
+{
+    $cfg = config();
+    $prefixo = $cfg['midia_url'] . '/';
+    if ($arquivo === '' || strpos($arquivo, $prefixo) !== 0 || strpos($arquivo, '..') !== false || strpos($arquivo, '\\') !== false) {
+        return null;
+    }
+    $resto = substr($arquivo, strlen($prefixo));
+    return $resto === '' ? null : $cfg['midia_dir'] . '/' . $resto;
+}
+
+function historico_dir(): string
+{
+    return config()['dados_dir'] . '/historico';
+}
+
+/** @return array<int,string> número da versão => caminho, da mais nova para a mais velha */
+function historico_arquivos(): array
+{
+    $r = [];
+    foreach (glob(historico_dir() . '/*.json') ?: [] as $f) {
+        if (preg_match('/(\d+)\.json$/', $f, $m)) {
+            $r[(int) $m[1]] = $f;
+        }
+    }
+    krsort($r);
+    return $r;
+}
+
+function historico_ler(string $arquivo): ?array
+{
+    $d = is_file($arquivo) ? json_decode((string) file_get_contents($arquivo), true) : null;
+    return is_array($d) && isset($d['n'], $d['conteudo']) && is_array($d['conteudo']) ? $d : null;
+}
+
+/**
+ * Salva o conteúdo. $revisao_esperada é a revisão que a tela tinha quando abriu: se alguém salvou
+ * no meio, devolve 'conflito' e nada é gravado.
+ *
+ * @return array{ok:bool,revisao?:int,erro?:string,detalhes?:array}
+ */
+function conteudo_salvar(array $c, int $revisao_esperada, string $resumo = ''): array
+{
+    $cfg = config();
+    if (empty($cfg['configurado']) || $cfg['dados_dir'] === '') {
+        return ['ok' => false, 'erro' => 'invalido', 'detalhes' => [['campo' => '', 'mensagem' => 'O painel ainda não está configurado.']]];
+    }
+    $detalhes = conteudo_validar($c);
+    if ($detalhes) {
+        return ['ok' => false, 'erro' => 'invalido', 'detalhes' => $detalhes];
+    }
+
+    $dir = $cfg['dados_dir'];
+    foreach ([$dir, historico_dir()] as $p) {
+        if (!is_dir($p)) {
+            @mkdir($p, 0700, true);
+        }
+    }
+    $trava = fopen($dir . '/trava.lock', 'c');
+    if (!$trava) {
+        return ['ok' => false, 'erro' => 'invalido', 'detalhes' => [['campo' => '', 'mensagem' => 'Não foi possível gravar. Tente de novo.']]];
+    }
+    flock($trava, LOCK_EX);
+    try {
+        $atual = conteudo_ler_editado();
+        $rev_atual = (int) ($atual['revisao'] ?? 0);
+        if ($rev_atual !== $revisao_esperada) {
+            return ['ok' => false, 'erro' => 'conflito'];
+        }
+
+        $nova = $rev_atual + 1;
+        $c['versao_esquema'] = ESQUEMA_VERSAO;
+        $c['revisao'] = $nova;
+
+        $hist = [
+            'n' => $nova,
+            'data' => date('c', seg_agora_conteudo()),
+            'resumo' => $resumo,
+            'conteudo' => $c,
+        ];
+        if (!conteudo_gravar_atomico(historico_dir() . '/' . sprintf('%04d', $nova) . '.json', conteudo_json($hist))
+            || !conteudo_gravar_atomico($dir . '/site.json', conteudo_json($c))) {
+            return ['ok' => false, 'erro' => 'invalido', 'detalhes' => [['campo' => '', 'mensagem' => 'Não foi possível gravar. Tente de novo.']]];
+        }
+
+        // Guarda só as últimas 20 versões; o que sai do histórico pode deixar mídia sem uso
+        $candidatas = $atual ? conteudo_midias_usadas($atual) : [];
+        $restam = [];
+        $arquivos = historico_arquivos();
+        $i = 0;
+        foreach ($arquivos as $n => $f) {
+            $i++;
+            if ($i > HISTORICO_MAX) {
+                $velho = historico_ler($f);
+                if ($velho) {
+                    $candidatas = array_merge($candidatas, conteudo_midias_usadas($velho['conteudo']));
+                }
+                @unlink($f);
+                continue;
+            }
+            $h = historico_ler($f);
+            if ($h) {
+                $restam = array_merge($restam, conteudo_midias_usadas($h['conteudo']));
+            }
+        }
+        $restam = array_flip($restam);
+        foreach (array_unique($candidatas) as $arq) {
+            if (!isset($restam[$arq]) && midia_caminho($arq) !== null) {
+                lixeira_mover($arq);
+            }
+        }
+    } finally {
+        flock($trava, LOCK_UN);
+        fclose($trava);
+    }
+    conteudo_cache_limpar();
+    return ['ok' => true, 'revisao' => $nova];
+}
+
+/** Hora usada nas datas gravadas (os testes podem fixar). */
+function seg_agora_conteudo(): int
+{
+    return (int) ($GLOBALS['__nucleo_teste']['agora'] ?? time());
+}
+
+/** @return array<int,array{n:int,data:string,resumo:string}> da versão mais nova para a mais velha */
+function conteudo_versoes(): array
+{
+    $r = [];
+    foreach (historico_arquivos() as $f) {
+        $h = historico_ler($f);
+        if ($h) {
+            $r[] = ['n' => (int) $h['n'], 'data' => (string) ($h['data'] ?? ''), 'resumo' => (string) ($h['resumo'] ?? '')];
+        }
+    }
+    return $r;
+}
+
+/** Volta o site para a versão $n. A volta também vira uma versão nova (nada se perde). */
+function conteudo_restaurar(int $n, int $revisao_esperada): array
+{
+    $arquivo = historico_dir() . '/' . sprintf('%04d', $n) . '.json';
+    $h = historico_ler($arquivo);
+    if (!$h) {
+        return ['ok' => false, 'erro' => 'nao_encontrada'];
+    }
+    return conteudo_salvar($h['conteudo'], $revisao_esperada, 'Voltou para a versão ' . $n);
+}
+
+function lixeira_dir(): string
+{
+    return config()['dados_dir'] . '/lixeira';
+}
+
+/**
+ * Manda uma mídia de conteudo/midia/ para a lixeira. Nunca mexe em assets/ nem em fora da pasta de mídia.
+ * @return string|null id na lixeira, ou null se o arquivo não pode ou não existe
+ */
+function lixeira_mover(string $arquivo): ?string
+{
+    $origem = midia_caminho($arquivo);
+    if ($origem === null || !is_file($origem)) {
+        return null;
+    }
+    $id = date('Ymd-His', seg_agora_conteudo()) . '-' . bin2hex(random_bytes(3));
+    $pasta = lixeira_dir() . '/' . $id;
+    if (!@mkdir($pasta, 0700, true)) {
+        return null;
+    }
+    $tamanho = (int) filesize($origem);
+    if (!@rename($origem, $pasta . '/arquivo')) {
+        @rmdir($pasta);
+        return null;
+    }
+    $meta = ['id' => $id, 'arquivo' => $arquivo, 'nome' => basename($arquivo), 'data' => date('c', seg_agora_conteudo()), 'tamanho' => $tamanho];
+    file_put_contents($pasta . '/meta.json', conteudo_json($meta));
+    return $id;
+}
+
+/** @return array<int,array> mais novos primeiro */
+function lixeira_listar(): array
+{
+    $r = [];
+    foreach (glob(lixeira_dir() . '/*/meta.json') ?: [] as $f) {
+        $m = json_decode((string) file_get_contents($f), true);
+        if (is_array($m) && isset($m['id'])) {
+            $r[] = $m;
+        }
+    }
+    usort($r, static fn($a, $b) => strcmp((string) $b['id'], (string) $a['id']));
+    return $r;
+}
+
+/** Devolve a mídia ao lugar de origem. Falha se já existe outro arquivo com o mesmo nome. */
+function lixeira_restaurar(string $id): bool
+{
+    if (!preg_match('/^\d{8}-\d{6}-[0-9a-f]+$/', $id)) {
+        return false;
+    }
+    $pasta = lixeira_dir() . '/' . $id;
+    $m = is_file($pasta . '/meta.json') ? json_decode((string) file_get_contents($pasta . '/meta.json'), true) : null;
+    $destino = is_array($m) ? midia_caminho((string) ($m['arquivo'] ?? '')) : null;
+    if ($destino === null || file_exists($destino) || !is_file($pasta . '/arquivo')) {
+        return false;
+    }
+    if (!is_dir(dirname($destino))) {
+        @mkdir(dirname($destino), 0755, true);
+    }
+    if (!@rename($pasta . '/arquivo', $destino)) {
+        return false;
+    }
+    @unlink($pasta . '/meta.json');
+    @rmdir($pasta);
+    return true;
+}
+
+/** Apaga de vez o que está na lixeira há mais de $dias dias. Com 0, esvazia tudo. Devolve quantos itens apagou. */
+function lixeira_esvaziar(int $dias = 30): int
+{
+    $limite = seg_agora_conteudo() - $dias * 86400;
+    $n = 0;
+    foreach (lixeira_listar() as $m) {
+        $quando = strtotime((string) ($m['data'] ?? '')) ?: 0;
+        if ($dias > 0 && $quando > $limite) {
+            continue;
+        }
+        $pasta = lixeira_dir() . '/' . $m['id'];
+        foreach (glob($pasta . '/*') ?: [] as $f) {
+            @unlink($f);
+        }
+        if (@rmdir($pasta)) {
+            $n++;
+        }
+    }
+    return $n;
 }

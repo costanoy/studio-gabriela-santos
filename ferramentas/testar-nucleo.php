@@ -265,6 +265,83 @@ t(strpos($hx, '<script>alert(1)') === false && strpos($hx, '<img src=x') === fal
 t(strpos($hx, '&lt;script&gt;alert(1)') !== false, 'o payload aparece como texto escapado');
 config_definir(null);
 
+echo "\nL14 revisão, conflito, histórico e lixeira\n";
+$midia_t = $tmp . '/site/conteudo/midia';
+mkdir($midia_t, 0700, true);
+config_definir(array_merge($cfg_teste, ['midia_dir' => $midia_t, 'midia_url' => 'conteudo/midia']));
+$GLOBALS['__nucleo_teste'] = ['sem_exit' => true, 'agora' => 8000000];
+conteudo_cache_limpar();
+$base = conteudo_padrao();
+t((int) (conteudo_ler()['revisao'] ?? -1) === 0, 'sem site.json a revisão é 0');
+$r = conteudo_salvar($base, 0, 'primeiro');
+t($r === ['ok' => true, 'revisao' => 1], 'salvar com a revisão certa devolve ok e revisao 1');
+t(is_file($tmp . '/site.json') && (int) json_decode((string) file_get_contents($tmp . '/site.json'), true)['revisao'] === 1, 'site.json gravado com revisao 1');
+t(conteudo_ler()['revisao'] === 1, 'conteudo_ler enxerga a revisão nova');
+$r = conteudo_salvar($base, 0, 'de outra tela');
+t($r === ['ok' => false, 'erro' => 'conflito'], 'salvar com revisão velha dá conflito (a API responde 409)');
+t((int) json_decode((string) file_get_contents($tmp . '/site.json'), true)['revisao'] === 1, 'o conflito não grava nada');
+$ruim = $base;
+$ruim['resultados']['itens'][0]['ordem'] = -5;
+$r = conteudo_salvar($ruim, 1, 'ruim');
+t($r['ok'] === false && $r['erro'] === 'invalido' && !empty($r['detalhes']), 'conteúdo inválido volta invalido com detalhes');
+t(is_file($tmp . '/historico/0001.json') && json_decode((string) file_get_contents($tmp . '/historico/0001.json'), true)['resumo'] === 'primeiro', 'versão guardada em historico/NNNN.json com resumo');
+
+// mídia: a.webp entra na versão 2 e sai na 3; só vai para a lixeira quando nenhuma das 20 versões a usa
+file_put_contents($midia_t . '/a.webp', 'x');
+$ca = $base;
+$ca['resultados']['itens'][0]['arquivo'] = 'conteudo/midia/a.webp';
+$r = conteudo_salvar($ca, 1, 'com a.webp');
+t($r['ok'] && $r['revisao'] === 2, 'salvar versão com mídia nova');
+$r = conteudo_salvar($base, 2, 'sem a.webp');
+t(is_file($midia_t . '/a.webp') && !lixeira_listar(), 'mídia que ainda está no histórico não vai para a lixeira');
+$rev = 3;
+for ($i = 0; $i < 25; $i++) {
+    $b = $base;
+    $b['seo']['titulo'] = 'Título ' . $i;
+    $r = conteudo_salvar($b, $rev, 'ciclo ' . $i);
+    $rev = $r['revisao'];
+}
+t(count(conteudo_versoes()) === 20, 'histórico mantém só as 20 últimas versões');
+t(conteudo_versoes()[0]['n'] === $rev, 'a versão mais nova vem primeiro');
+t(!is_file($midia_t . '/a.webp'), 'mídia que nenhuma versão usa mais sai da pasta de mídia');
+$lx = lixeira_listar();
+t(count($lx) === 1 && $lx[0]['arquivo'] === 'conteudo/midia/a.webp' && preg_match('/^\d{8}-\d{6}-[0-9a-f]+$/', $lx[0]['id']) === 1, 'a mídia está na lixeira com meta (id Ymd-His-hex)');
+t(is_file($tmp . '/lixeira/' . $lx[0]['id'] . '/meta.json'), 'lixeira/<id>/meta.json existe');
+t(lixeira_mover('assets/hero-bg.png') === null && is_file(RAIZ . '/assets/hero-bg.png'), 'assets/ nunca vai para a lixeira');
+t(lixeira_mover('conteudo/midia/../../index.php') === null && is_file(RAIZ . '/index.php'), 'caminho com .. é recusado');
+t(lixeira_restaurar($lx[0]['id']) === true && is_file($midia_t . '/a.webp') && !lixeira_listar(), 'lixeira_restaurar devolve a mídia ao lugar');
+lixeira_mover('conteudo/midia/a.webp');
+$GLOBALS['__nucleo_teste']['agora'] += 29 * 86400;
+t(lixeira_esvaziar(30) === 0 && count(lixeira_listar()) === 1, 'lixeira guarda o que tem menos de 30 dias');
+$GLOBALS['__nucleo_teste']['agora'] += 2 * 86400;
+t(lixeira_esvaziar(30) === 1 && !lixeira_listar(), 'lixeira_esvaziar(30) apaga o que passou de 30 dias');
+
+$vs = conteudo_versoes();
+$alvo = $vs[count($vs) - 1]['n'];
+$antes = $rev;
+$titulo_alvo = json_decode((string) file_get_contents($tmp . '/historico/' . sprintf('%04d', $alvo) . '.json'), true)['conteudo']['seo']['titulo'];
+$r = conteudo_restaurar($alvo, $antes - 1);
+t($r === ['ok' => false, 'erro' => 'conflito'], 'restaurar com revisão velha dá conflito');
+$r = conteudo_restaurar($alvo, $antes);
+t($r['ok'] === true && $r['revisao'] === $antes + 1, 'restaurar vira uma versão nova');
+t(conteudo_restaurar(99999, $antes + 1)['erro'] === 'nao_encontrada', 'restaurar versão que não existe');
+t(conteudo_ler()['seo']['titulo'] === $titulo_alvo, 'o conteúdo voltou ao da versão escolhida');
+
+// o payload XSS salvo sai escapado no site
+$cx2 = conteudo_ler();
+$cx2['contato']['endereco_curto'] = $xss;
+$r = conteudo_salvar($cx2, $cx2['revisao'], 'xss');
+t($r['ok'] === false && $r['erro'] === 'invalido', 'salvar texto com tag HTML é recusado pela validação');
+// mesmo que um site.json chegue com tag (editado à mão), o site escapa na saída
+$no_disco = json_decode((string) file_get_contents($tmp . '/site.json'), true);
+$no_disco['contato']['endereco_curto'] = $xss;
+file_put_contents($tmp . '/site.json', json_encode($no_disco));
+conteudo_cache_limpar();
+$hs = renderizar('home', conteudo_ler());
+t(strpos($hs, '<script>alert(1)') === false && strpos($hs, '&lt;script&gt;alert(1)') !== false, 'payload XSS salvo aparece escapado no site');
+config_definir(null);
+conteudo_cache_limpar();
+
 // limpa a pasta temporária dos testes
 function limpar_pasta(string $d): void
 {
