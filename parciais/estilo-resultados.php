@@ -203,7 +203,9 @@
   a { color: #996C55; }
   a:hover { color: #7d5843; }
   video { display:block; }
-  header a, header button { -webkit-tap-highlight-color: transparent; outline: none; }
+  header a, header button { -webkit-tap-highlight-color: transparent; }
+  :focus-visible { outline: 2px solid #7D5843; outline-offset: 3px; }
+  header :focus-visible, footer :focus-visible, #mobile-nav-wrap :focus-visible, #procedimentos :focus-visible, #home :focus-visible { outline-color: #F3E4DA; }
   @media (max-width: 900px) {
     #rc-back-link { left: 5%; right:auto !important; }
     .rc-grid { grid-template-columns: 1fr !important; justify-content: stretch !important; }

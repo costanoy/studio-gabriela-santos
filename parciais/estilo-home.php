@@ -205,7 +205,9 @@
   a:hover { color: #8A5340; }
   ::selection { background: #E7CDBE; }
   #nav-toggle { display: none; }
-  header a, header button, #mobile-nav-wrap a { -webkit-tap-highlight-color: transparent; outline: none; }
+  header a, header button, #mobile-nav-wrap a { -webkit-tap-highlight-color: transparent; }
+  :focus-visible { outline: 2px solid #7D5843; outline-offset: 3px; }
+  header :focus-visible, footer :focus-visible, #mobile-nav-wrap :focus-visible, #procedimentos :focus-visible, #home :focus-visible { outline-color: #F3E4DA; }
   #home, #sobre, #procedimentos, #resultados, #cursos, #depoimentos, #contato { scroll-margin-top: 40px; }
   @media (max-width: 1100px) {
     #home, #sobre, #procedimentos, #resultados, #cursos, #depoimentos, #contato { scroll-margin-top: 30px; }
