@@ -23,3 +23,8 @@ portfolio-preview/
 # Auditoria (prints pesados e testes temporários ficam locais)
 .auditoria/prints/
 node_modules/
+test-results/
+playwright-report/
+.auditoria/*.json
+.auditoria/*.log
+.auditoria/*.png
