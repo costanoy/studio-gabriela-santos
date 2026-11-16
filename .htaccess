@@ -2,16 +2,64 @@
 
 DirectoryIndex index.php
 ErrorDocument 404 /404.php
+ErrorDocument 403 /404.php
+
+# Sem lista de arquivos das pastas
+Options -Indexes
 
 <IfModule mod_rewrite.c>
 RewriteEngine On
 
-# Uma URL só por página: /index.php e /resultados.php voltam para o endereço público (301)
-RewriteCond %{THE_REQUEST} \s/index\.php[\s?] [NC]
-RewriteRule ^index\.php$ / [R=301,L]
+# Uma URL só por página: https, sem www
+RewriteCond %{HTTPS} !=on
+RewriteCond %{HTTP:X-Forwarded-Proto} !=https
+RewriteRule ^ https://studiogabrielasantos.com.br%{REQUEST_URI} [R=301,L]
+RewriteCond %{HTTP_HOST} ^www\. [NC]
+RewriteRule ^ https://studiogabrielasantos.com.br%{REQUEST_URI} [R=301,L]
+
+# /index.html, /index.php e /resultados.php voltam para o endereço público (301)
+RewriteCond %{THE_REQUEST} \s/index\.(html|php)[\s?] [NC]
+RewriteRule ^index\.(html|php)$ / [R=301,L]
 RewriteCond %{THE_REQUEST} \s/resultados\.php[\s?] [NC]
 RewriteRule ^resultados\.php$ /resultados.html [R=301,L]
 
 # O endereço público de resultados continua .html (igual ao de antes e ao sitemap)
 RewriteRule ^resultados\.html$ resultados.php [L]
+
+# Código, dados e ferramentas nunca saem pela web
+RewriteRule ^(nucleo|parciais|dados|ferramentas|tests|acervo|node_modules|\.auditoria|\.local|\.claude|\.git|publicar)(/|$) - [F,L]
+RewriteRule ^(package(-lock)?\.json|playwright\.config\.js|MELHORIAS\.md|CLAUDE\.md|\.user\.ini|painel-config[^/]*\.php)$ - [F,L]
+</IfModule>
+
+# Cabeçalhos de segurança
+<IfModule mod_headers.c>
+Header always set X-Content-Type-Options "nosniff"
+Header always set Referrer-Policy "strict-origin-when-cross-origin"
+Header always set X-Frame-Options "SAMEORIGIN"
+Header always set Permissions-Policy "camera=(), microphone=(), geolocation=()"
+</IfModule>
+
+# Cache por tipo de arquivo
+<IfModule mod_expires.c>
+ExpiresActive On
+ExpiresByType image/webp "access plus 1 month"
+ExpiresByType image/jpeg "access plus 1 month"
+ExpiresByType image/png "access plus 1 month"
+ExpiresByType image/svg+xml "access plus 1 month"
+ExpiresByType video/mp4 "access plus 1 month"
+ExpiresByType font/woff2 "access plus 1 month"
+ExpiresByType text/css "access plus 1 week"
+ExpiresByType application/javascript "access plus 1 week"
+ExpiresByType text/javascript "access plus 1 week"
+</IfModule>
+
+<IfModule mod_headers.c>
+# Imagens, vídeos e fontes: 30 dias (a mídia enviada pelo painel tem nome novo a cada envio e usa 1 ano, ver conteudo/midia/.htaccess)
+<FilesMatch "\.(webp|jpe?g|png|svg|mp4|woff2)$">
+Header set Cache-Control "public, max-age=2592000"
+</FilesMatch>
+# As páginas são geradas do JSON: sempre confirmam com o servidor
+<FilesMatch "\.(php|html)$">
+Header set Cache-Control "no-cache"
+</FilesMatch>
 </IfModule>

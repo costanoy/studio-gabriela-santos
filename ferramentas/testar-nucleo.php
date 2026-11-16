@@ -93,6 +93,16 @@ t(strpos($htaccess, 'ErrorDocument 404 /404.php') !== false, '.htaccess aponta o
 t(strpos($htaccess, 'index\.php$ / [R=301') !== false && strpos($htaccess, 'resultados\.php$ /resultados.html [R=301') !== false, '.htaccess: /index.php e /resultados.php dão 301');
 t(is_file(RAIZ . '/404.php'), '404.php existe');
 
+echo "\nT05 .htaccess e .user.ini\n";
+t(strpos($htaccess, 'Options -Indexes') !== false, 'Options -Indexes');
+t(strpos($htaccess, 'RewriteCond %{HTTP_HOST} ^www\.') !== false && strpos($htaccess, 'https://studiogabrielasantos.com.br%{REQUEST_URI} [R=301') !== false, 'www e http vão para https sem www (301)');
+t(strpos($htaccess, 'index\.(html|php)$ / [R=301') !== false, '/index.html e /index.php dão 301 para /');
+t(strpos($htaccess, 'X-Content-Type-Options "nosniff"') !== false && strpos($htaccess, 'Referrer-Policy') !== false && strpos($htaccess, 'X-Frame-Options') !== false, 'cabeçalhos de segurança');
+t(strpos($htaccess, 'max-age=2592000') !== false && strpos($htaccess, '"no-cache"') !== false, 'Cache-Control por tipo (mídia 30 dias, páginas no-cache)');
+t(preg_match('/\(nucleo\|parciais\|dados\|ferramentas/', $htaccess) === 1, 'pastas de código e dados bloqueadas na web');
+$ini = (string) file_get_contents(RAIZ . '/.user.ini');
+t(strpos($ini, 'upload_max_filesize=64M') !== false && strpos($ini, 'post_max_size=70M') !== false && strpos($ini, 'memory_limit=256M') !== false && strpos($ini, 'max_execution_time=120') !== false, '.user.ini com os 4 limites');
+
 echo "\n";
 if ($falhas) {
     echo count($falhas) . " falha(s), $ok ok.\n";
