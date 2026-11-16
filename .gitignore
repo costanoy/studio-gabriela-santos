@@ -15,7 +15,11 @@ desktop.ini
 .vscode/
 .idea/
 .claude/settings.local.json
-.claude/
+.claude/settings.local.json
 
 # Prévia de portfólio (gravações locais)
 portfolio-preview/
+
+# Auditoria (prints pesados e testes temporários ficam locais)
+.auditoria/prints/
+node_modules/
