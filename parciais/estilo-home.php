@@ -210,7 +210,7 @@
   header :focus-visible, footer :focus-visible, #mobile-nav-wrap :focus-visible, #procedimentos :focus-visible, #home :focus-visible { outline-color: #F3E4DA; }
   #home, #sobre, #procedimentos, #resultados, #cursos, #depoimentos, #contato { scroll-margin-top: 40px; }
   @media (max-width: 1100px) {
-    #home, #sobre, #procedimentos, #resultados, #cursos, #depoimentos, #contato { scroll-margin-top: 30px; }
+    #home, #sobre, #procedimentos, #resultados, #cursos, #depoimentos, #contato { scroll-margin-top: 112px; }
     #desktop-nav { display: none !important; }
     #nav-toggle { display: flex !important; }
     #site-header { grid-template-columns: 1fr !important; }
