@@ -40,7 +40,7 @@ function soltarTrava() {
 /** Zera o conteúdo editado, o histórico, a lixeira e as tentativas de login. */
 function zerarDados() {
   for (const f of ['site.json', 'tentativas.json']) fs.rmSync(path.join(DADOS, f), { force: true });
-  for (const d of ['historico', 'lixeira']) fs.rmSync(path.join(DADOS, d), { recursive: true, force: true });
+  for (const d of ['historico', 'lixeira', 'midia-privada']) fs.rmSync(path.join(DADOS, d), { recursive: true, force: true });
 }
 
 function listarMidia() {

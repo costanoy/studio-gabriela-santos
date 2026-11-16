@@ -36,7 +36,7 @@ function soltarTrava() {
 /** Zera o conteúdo editado, o histórico, a lixeira e as tentativas de login. */
 function zerarDados() {
   for (const f of ['site.json', 'tentativas.json']) fs.rmSync(path.join(DADOS, f), { force: true });
-  for (const d of ['historico', 'lixeira']) fs.rmSync(path.join(DADOS, d), { recursive: true, force: true });
+  for (const d of ['historico', 'lixeira', 'midia-privada']) fs.rmSync(path.join(DADOS, d), { recursive: true, force: true });
 }
 
 const test = base.extend({
@@ -554,8 +554,9 @@ test.describe('L13 versões e Desfazer', () => {
   });
 
   test('a mídia só vai para a lixeira quando nenhuma versão guardada usa mais', async ({ page }) => {
-    const pasta = path.join(__dirname, '..', 'conteudo', 'midia');
-    const arquivo = path.join(pasta, 'lixeira-teste.jpg');
+    const pasta = path.join(__dirname, '..', 'conteudo', 'midia', '2099');
+    const arquivo = path.join(pasta, 'a1b2c3d4e5f60718.jpg');
+    const privado = path.join(DADOS, 'midia-privada', '2099', 'a1b2c3d4e5f60718.jpg');
     fs.mkdirSync(pasta, { recursive: true });
     fs.copyFileSync(path.join(__dirname, '..', 'assets', 'results', 'drenagem-antes1.webp'), arquivo);
     try {
@@ -565,7 +566,7 @@ test.describe('L13 versões e Desfazer', () => {
         lido.conteudo.resultados.itens.find((x) => x.id === 'foto-ultrassom-1').arquivo = arq;
         return chamar(page, { acao: 'salvar', conteudo: lido.conteudo, revisao: rev, resumo: 'Trocou a foto' });
       };
-      let r = await trocar('conteudo/midia/lixeira-teste.jpg', 0);
+      let r = await trocar('conteudo/midia/2099/a1b2c3d4e5f60718.jpg', 0);
       expect(r.ok).toBe(true);
       r = await trocar('assets/results/ultrassom-antes1.jpeg', r.revisao);
       expect(r.ok).toBe(true);
@@ -574,17 +575,21 @@ test.describe('L13 versões e Desfazer', () => {
         r = await salvarTitulo(page, 'L' + i, r.revisao);
         expect(r.ok).toBe(true);
       }
-      // 20 saves: a versão 1 (que usava a foto) ainda está guardada
-      expect(fs.existsSync(arquivo)).toBe(true);
+      // 20 saves: a versão 1 (que usava a foto) ainda está guardada. A foto já saiu do ar, mas fica na área privada.
+      expect(fs.existsSync(arquivo)).toBe(false);
+      expect(fs.existsSync(privado)).toBe(true);
       expect((await chamar(page, { acao: 'lixeira' })).itens.length).toBe(0);
       r = await salvarTitulo(page, 'L-final', r.revisao); // 21º: a versão 1 sai do histórico
       expect(r.ok).toBe(true);
       const lix = await chamar(page, { acao: 'lixeira' });
       expect(lix.itens.length).toBe(1);
-      expect(lix.itens[0].nome).toBe('lixeira-teste.jpg');
+      expect(lix.itens[0].nome).toBe('a1b2c3d4e5f60718.jpg');
       expect(fs.existsSync(arquivo)).toBe(false);
+      expect(fs.existsSync(privado)).toBe(false);
     } finally {
       fs.rmSync(arquivo, { force: true });
+      fs.rmSync(pasta, { recursive: true, force: true });
+      fs.rmSync(path.dirname(privado), { recursive: true, force: true });
     }
   });
 });
@@ -633,8 +638,9 @@ test.describe('P3 apagar e lixeira', () => {
   });
 
   test('a lixeira lista o arquivo e Restaurar traz de volta', async ({ page }) => {
-    const pasta = path.join(__dirname, '..', 'conteudo', 'midia');
-    const arquivo = path.join(pasta, 'lixeira-teste.jpg');
+    const pasta = path.join(__dirname, '..', 'conteudo', 'midia', '2099');
+    const arquivo = path.join(pasta, 'a1b2c3d4e5f60718.jpg');
+    const privado = path.join(DADOS, 'midia-privada', '2099', 'a1b2c3d4e5f60718.jpg');
     fs.mkdirSync(pasta, { recursive: true });
     fs.copyFileSync(path.join(__dirname, '..', 'assets', 'results', 'drenagem-antes1.webp'), arquivo);
     try {
@@ -644,7 +650,7 @@ test.describe('P3 apagar e lixeira', () => {
         lido.conteudo.resultados.itens.find((x) => x.id === 'foto-ultrassom-1').arquivo = arq;
         return chamar(page, { acao: 'salvar', conteudo: lido.conteudo, revisao: rev, resumo: 'Trocou a foto' });
       };
-      let r = await trocar('conteudo/midia/lixeira-teste.jpg', 0);
+      let r = await trocar('conteudo/midia/2099/a1b2c3d4e5f60718.jpg', 0);
       r = await trocar('assets/results/ultrassom-antes1.jpeg', r.revisao);
       for (let i = 0; i < 19; i++) {
         r = await salvarTitulo(page, 'X' + i, r.revisao);
@@ -655,13 +661,15 @@ test.describe('P3 apagar e lixeira', () => {
       await page.click('#cartao-lixeira');
       const linha = page.locator('#lista-lixeira .linha-res');
       await expect(linha).toHaveCount(1);
-      await expect(linha).toContainText('lixeira-teste.jpg');
+      await expect(linha).toContainText('a1b2c3d4e5f60718.jpg');
       await linha.getByRole('button', { name: /Restaurar/ }).click();
       await expect(page.locator('.toast')).toContainText('voltou');
       await expect(page.locator('#lista-lixeira')).toContainText('vazia');
       expect(fs.existsSync(arquivo)).toBe(true);
     } finally {
       fs.rmSync(arquivo, { force: true });
+      fs.rmSync(pasta, { recursive: true, force: true });
+      fs.rmSync(path.dirname(privado), { recursive: true, force: true });
     }
   });
 });

@@ -287,13 +287,14 @@ t($r['ok'] === false && $r['erro'] === 'invalido' && !empty($r['detalhes']), 'co
 t(is_file($tmp . '/historico/0001.json') && json_decode((string) file_get_contents($tmp . '/historico/0001.json'), true)['resumo'] === 'primeiro', 'versão guardada em historico/NNNN.json com resumo');
 
 // mídia: a.webp entra na versão 2 e sai na 3; só vai para a lixeira quando nenhuma das 20 versões a usa
-file_put_contents($midia_t . '/a.webp', 'x');
+@mkdir($midia_t . '/2026', 0700, true);
+file_put_contents($midia_t . '/2026/aaaaaaaaaaaaaaaa.webp', 'x');
 $ca = $base;
-$ca['resultados']['itens'][0]['arquivo'] = 'conteudo/midia/a.webp';
+$ca['resultados']['itens'][0]['arquivo'] = 'conteudo/midia/2026/aaaaaaaaaaaaaaaa.webp';
 $r = conteudo_salvar($ca, 1, 'com a.webp');
 t($r['ok'] && $r['revisao'] === 2, 'salvar versão com mídia nova');
 $r = conteudo_salvar($base, 2, 'sem a.webp');
-t(is_file($midia_t . '/a.webp') && !lixeira_listar(), 'mídia que ainda está no histórico não vai para a lixeira');
+t(!is_file($midia_t . '/2026/aaaaaaaaaaaaaaaa.webp') && is_file($tmp . '/midia-privada/2026/aaaaaaaaaaaaaaaa.webp') && !lixeira_listar(), 'mídia que o site não usa mais sai do public_html e fica na área privada, não na lixeira');
 $rev = 3;
 for ($i = 0; $i < 25; $i++) {
     $b = $base;
@@ -303,14 +304,14 @@ for ($i = 0; $i < 25; $i++) {
 }
 t(count(conteudo_versoes()) === 20, 'histórico mantém só as 20 últimas versões');
 t(conteudo_versoes()[0]['n'] === $rev, 'a versão mais nova vem primeiro');
-t(!is_file($midia_t . '/a.webp'), 'mídia que nenhuma versão usa mais sai da pasta de mídia');
+t(!is_file($midia_t . '/2026/aaaaaaaaaaaaaaaa.webp') && !is_file($tmp . '/midia-privada/2026/aaaaaaaaaaaaaaaa.webp'), 'mídia que nenhuma versão usa mais sai da pasta de mídia e da área privada');
 $lx = lixeira_listar();
-t(count($lx) === 1 && $lx[0]['arquivo'] === 'conteudo/midia/a.webp' && preg_match('/^\d{8}-\d{6}-[0-9a-f]+$/', $lx[0]['id']) === 1, 'a mídia está na lixeira com meta (id Ymd-His-hex)');
+t(count($lx) === 1 && $lx[0]['arquivo'] === 'conteudo/midia/2026/aaaaaaaaaaaaaaaa.webp' && preg_match('/^\d{8}-\d{6}-[0-9a-f]+$/', $lx[0]['id']) === 1, 'a mídia está na lixeira com meta (id Ymd-His-hex)');
 t(is_file($tmp . '/lixeira/' . $lx[0]['id'] . '/meta.json'), 'lixeira/<id>/meta.json existe');
 t(lixeira_mover('assets/hero-bg.webp') === null && is_file(RAIZ . '/assets/hero-bg.webp'), 'assets/ nunca vai para a lixeira');
 t(lixeira_mover('conteudo/midia/../../index.php') === null && is_file(RAIZ . '/index.php'), 'caminho com .. é recusado');
-t(lixeira_restaurar($lx[0]['id']) === true && is_file($midia_t . '/a.webp') && !lixeira_listar(), 'lixeira_restaurar devolve a mídia ao lugar');
-lixeira_mover('conteudo/midia/a.webp');
+t(lixeira_restaurar($lx[0]['id']) === true && is_file($midia_t . '/2026/aaaaaaaaaaaaaaaa.webp') && !lixeira_listar(), 'lixeira_restaurar devolve a mídia ao lugar');
+lixeira_mover('conteudo/midia/2026/aaaaaaaaaaaaaaaa.webp');
 $GLOBALS['__nucleo_teste']['agora'] += 29 * 86400;
 t(lixeira_esvaziar(30) === 0 && count(lixeira_listar()) === 1, 'lixeira guarda o que tem menos de 30 dias');
 $GLOBALS['__nucleo_teste']['agora'] += 2 * 86400;
@@ -339,6 +340,61 @@ file_put_contents($tmp . '/site.json', json_encode($no_disco));
 conteudo_cache_limpar();
 $hs = renderizar('home', conteudo_ler());
 t(strpos($hs, '<script>alert(1)') === false && strpos($hs, '&lt;script&gt;alert(1)') !== false, 'payload XSS salvo aparece escapado no site');
+config_definir(null);
+conteudo_cache_limpar();
+
+echo "\nP1-1 mídia fora do ar guardada em área privada\n";
+config_definir(array_merge($cfg_teste, ['midia_dir' => $midia_t, 'midia_url' => 'conteudo/midia']));
+$GLOBALS['__nucleo_teste'] = ['sem_exit' => true, 'agora' => 8500000];
+conteudo_cache_limpar();
+$FA = 'conteudo/midia/2026/bbbbbbbbbbbbbbbb.webp';
+$FB = 'conteudo/midia/2026/cccccccccccccccc.jpg';
+file_put_contents($midia_t . '/2026/bbbbbbbbbbbbbbbb.webp', 'foto da dona A');
+file_put_contents($midia_t . '/2026/cccccccccccccccc.jpg', 'foto da dona B');
+$revp = (int) conteudo_ler()['revisao'];
+$cp = conteudo_padrao();
+$cp['resultados']['itens'][0]['antes']['arquivo'] = $FA;
+$cp['resultados']['itens'][0]['depois']['arquivo'] = $FB;
+$r = conteudo_salvar($cp, $revp, 'com A e B');
+t($r['ok'] === true && is_file($midia_t . '/2026/bbbbbbbbbbbbbbbb.webp') && is_file($midia_t . '/2026/cccccccccccccccc.jpg'), 'mídia que o conteúdo usa continua no ar');
+$rev_com = $r['revisao'];
+$cp2 = conteudo_ler();
+$cp2['resultados']['itens'][0]['antes']['arquivo'] = 'assets/hero-bg.webp';
+$r = conteudo_salvar($cp2, $rev_com, 'sem A');
+t($r['ok'] === true && !is_file($midia_t . '/2026/bbbbbbbbbbbbbbbb.webp'), 'foto tirada do site some do public_html logo ao salvar');
+t(is_file($tmp . '/midia-privada/2026/bbbbbbbbbbbbbbbb.webp') && file_get_contents($tmp . '/midia-privada/2026/bbbbbbbbbbbbbbbb.webp') === 'foto da dona A', 'a foto fica guardada na área privada, dentro de dados_dir');
+t(is_file($midia_t . '/2026/cccccccccccccccc.jpg') && !lixeira_listar(), 'foto que o conteúdo ainda usa fica no ar e nada vai para a lixeira');
+$rev_sem = $r['revisao'];
+$r = conteudo_restaurar($rev_com, $rev_sem);
+t($r['ok'] === true && is_file($midia_t . '/2026/bbbbbbbbbbbbbbbb.webp') && !is_file($tmp . '/midia-privada/2026/bbbbbbbbbbbbbbbb.webp'), 'restaurar uma versão traz de volta a foto de que ela precisa');
+t(file_get_contents($midia_t . '/2026/bbbbbbbbbbbbbbbb.webp') === 'foto da dona A', 'a foto voltou com o mesmo conteúdo');
+// assets/ originais nunca são movidos
+$hero = RAIZ . '/assets/hero-bg.webp';
+$hero_antes = is_file($hero) ? md5_file($hero) : null;
+$cp3 = conteudo_ler();
+$cp3['resultados']['itens'][0]['antes']['arquivo'] = 'assets/hero-bg.webp';
+$r = conteudo_salvar($cp3, $r['revisao'], 'tira A');
+t(midia_privada_guardar('assets/hero-bg.webp') === false && ($hero_antes === null || (is_file($hero) && md5_file($hero) === $hero_antes)), 'assets/ originais nunca vão para a área privada');
+// mídia que nenhuma versão usa vai para a lixeira, mesmo estando na área privada
+$revq = $r['revisao'];
+for ($i = 0; $i < 22; $i++) {
+    $b = conteudo_ler();
+    $b['resultados']['itens'][0]['depois']['arquivo'] = 'assets/hero-bg.webp';
+    $b['seo']['titulo'] = 'Giro ' . $i;
+    $r = conteudo_salvar($b, $revq, 'giro');
+    $revq = $r['revisao'];
+}
+t(!is_file($midia_t . '/2026/cccccccccccccccc.jpg') && !is_file($tmp . '/midia-privada/2026/cccccccccccccccc.jpg') && count(array_filter(lixeira_listar(), fn($m) => $m['arquivo'] === $FB)) === 1, 'foto que nenhuma versão usa mais vai da área privada para a lixeira');
+// P2-7: só AAAA/<hex>.(webp|jpg|mp4)
+t(midia_caminho('conteudo/midia/.htaccess') === null && midia_caminho('conteudo/midia/2026/.htaccess') === null && midia_caminho('conteudo/midia/a.webp') === null && midia_caminho('conteudo/midia/2026/abc.webp') === null && midia_caminho('conteudo/midia/2026/aaaaaaaaaaaaaaaa.php') === null && midia_caminho('conteudo/midia/2026/aaaaaaaaaaaaaaaa.png') === null, 'midia_caminho recusa arquivo oculto e nome fora do formato');
+t(midia_caminho($FA) === $midia_t . '/2026/bbbbbbbbbbbbbbbb.webp' && midia_caminho('conteudo/midia/2026/dddddddddddddddd.mp4') !== null, 'midia_caminho aceita AAAA/<hex>.(webp|jpg|mp4)');
+$cv = conteudo_ler();
+$cv['resultados']['itens'][0]['antes']['arquivo'] = 'conteudo/midia/.htaccess';
+t(count(array_filter(conteudo_validar($cv), fn($e) => $e['campo'] === 'resultados.itens.0.antes.arquivo')) === 1, 'a validação recusa conteudo/midia/.htaccess como arquivo de foto');
+$cv['resultados']['itens'][0]['antes']['arquivo'] = 'conteudo/midia/foto-solta.webp';
+t(count(array_filter(conteudo_validar($cv), fn($e) => $e['campo'] === 'resultados.itens.0.antes.arquivo')) === 1, 'a validação recusa nome fora do formato');
+$cv['resultados']['itens'][0]['antes']['arquivo'] = $FA;
+t(!array_filter(conteudo_validar($cv), fn($e) => $e['campo'] === 'resultados.itens.0.antes.arquivo'), 'a validação aceita o formato certo');
 config_definir(null);
 conteudo_cache_limpar();
 

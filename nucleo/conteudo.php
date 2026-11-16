@@ -206,7 +206,8 @@ function conteudo_validar(array $c): array
         }
     };
     $midia = static function ($v, string $campo, string $nome) use ($erro): void {
-        if (!is_string($v) || !preg_match('#^(assets|conteudo/midia)/[A-Za-z0-9_./-]+$#', $v) || str_contains($v, '..') || str_contains($v, '//')) {
+        $ok_assets = is_string($v) && preg_match('#^assets/[A-Za-z0-9_./-]+$#', $v) && !str_contains($v, '..') && !str_contains($v, '//') && $v[strlen('assets/')] !== '.';
+        if (!$ok_assets && !(is_string($v) && midia_resto($v) !== null)) {
             $erro($campo, "O arquivo de $nome não é válido.");
         }
     };
@@ -428,16 +429,94 @@ function conteudo_gravar_atomico(string $arquivo, string $texto): bool
     return true;
 }
 
-/** Caminho no disco de uma mídia de conteudo/midia/. Devolve null para qualquer outra coisa (assets/, "..", etc.). */
-function midia_caminho(string $arquivo): ?string
+/** Formato único dos arquivos enviados pelo painel: AAAA/<16 letras e números hex>.(webp|jpg|mp4). */
+const MIDIA_RESTO_REGEX = '#^\d{4}/[0-9a-f]{16}\.(webp|jpg|mp4)$#';
+
+/** Parte do caminho depois de "conteudo/midia/", ou null se não for um arquivo enviado pelo painel. */
+function midia_resto(string $arquivo): ?string
 {
-    $cfg = config();
-    $prefixo = $cfg['midia_url'] . '/';
-    if ($arquivo === '' || strpos($arquivo, $prefixo) !== 0 || strpos($arquivo, '..') !== false || strpos($arquivo, '\\') !== false) {
+    $prefixo = config()['midia_url'] . '/';
+    if (strpos($arquivo, $prefixo) !== 0) {
         return null;
     }
     $resto = substr($arquivo, strlen($prefixo));
-    return $resto === '' ? null : $cfg['midia_dir'] . '/' . $resto;
+    return preg_match(MIDIA_RESTO_REGEX, $resto) === 1 ? $resto : null;
+}
+
+/** Caminho no disco de uma mídia de conteudo/midia/. Devolve null para qualquer outra coisa (assets/, "..", arquivo oculto etc.). */
+function midia_caminho(string $arquivo): ?string
+{
+    $resto = midia_resto($arquivo);
+    return $resto === null ? null : config()['midia_dir'] . '/' . $resto;
+}
+
+/** Área privada (fora do public_html): guarda a mídia que o site não usa agora, mas que uma versão antiga ainda pede. */
+function midia_privada_dir(): string
+{
+    return config()['dados_dir'] . '/midia-privada';
+}
+
+function midia_privada_caminho(string $arquivo): ?string
+{
+    $resto = midia_resto($arquivo);
+    return $resto === null ? null : midia_privada_dir() . '/' . $resto;
+}
+
+/** Move um arquivo, criando a pasta de destino. Se o rename não puder (outro disco), copia e apaga. */
+function midia_mover_arquivo(string $de, string $para): bool
+{
+    $pasta = dirname($para);
+    if (!is_dir($pasta) && !@mkdir($pasta, 0700, true) && !is_dir($pasta)) {
+        return false;
+    }
+    if (@rename($de, $para)) {
+        return true;
+    }
+    if (@copy($de, $para)) {
+        @unlink($de);
+        return true;
+    }
+    @unlink($para);
+    return false;
+}
+
+/** Tira a mídia do public_html e guarda na área privada. true se ela ficou (ou já estava) guardada. */
+function midia_privada_guardar(string $arquivo): bool
+{
+    $publico = midia_caminho($arquivo);
+    $privado = midia_privada_caminho($arquivo);
+    if ($publico === null || $privado === null) {
+        return false;
+    }
+    if (!is_file($publico)) {
+        return is_file($privado);
+    }
+    if (is_file($privado)) {
+        @unlink($publico);   // já há cópia privada; a pública não deve continuar no ar
+        return !is_file($publico);
+    }
+    return midia_mover_arquivo($publico, $privado);
+}
+
+/** Traz de volta ao site a mídia guardada na área privada. true se o arquivo está no ar depois da chamada. */
+function midia_privada_trazer(string $arquivo): bool
+{
+    $publico = midia_caminho($arquivo);
+    $privado = midia_privada_caminho($arquivo);
+    if ($publico === null || $privado === null) {
+        return false;
+    }
+    if (is_file($publico)) {
+        return true;
+    }
+    if (!is_file($privado)) {
+        return false;
+    }
+    if (!midia_mover_arquivo($privado, $publico)) {
+        return false;
+    }
+    @chmod($publico, 0644);
+    return true;
 }
 
 function historico_dir(): string
@@ -499,6 +578,12 @@ function conteudo_salvar(array $c, int $revisao_esperada, string $resumo = ''): 
             return ['ok' => false, 'erro' => 'conflito'];
         }
 
+        // Tudo o que o conteúdo novo usa precisa estar no ar (ao voltar uma versão, sai da área privada)
+        $uso = array_flip(conteudo_midias_usadas($c));
+        foreach (array_keys($uso) as $arq) {
+            midia_privada_trazer((string) $arq);
+        }
+
         $nova = $rev_atual + 1;
         $c['versao_esquema'] = ESQUEMA_VERSAO;
         $c['revisao'] = $nova;
@@ -514,29 +599,36 @@ function conteudo_salvar(array $c, int $revisao_esperada, string $resumo = ''): 
             return ['ok' => false, 'erro' => 'invalido', 'detalhes' => [['campo' => '', 'mensagem' => 'Não foi possível gravar. Tente de novo.']]];
         }
 
-        // Guarda só as últimas 20 versões; o que sai do histórico pode deixar mídia sem uso
+        // Guarda só as últimas 20 versões. A mídia que o site não usa mais sai do public_html na hora:
+        // vai para a área privada se alguma versão ainda a pede, ou para a lixeira se nenhuma pede.
         $candidatas = $atual ? conteudo_midias_usadas($atual) : [];
         $restam = [];
         $arquivos = historico_arquivos();
         $i = 0;
         foreach ($arquivos as $n => $f) {
             $i++;
+            $h = historico_ler($f);
             if ($i > HISTORICO_MAX) {
-                $velho = historico_ler($f);
-                if ($velho) {
-                    $candidatas = array_merge($candidatas, conteudo_midias_usadas($velho['conteudo']));
+                if ($h) {
+                    $candidatas = array_merge($candidatas, conteudo_midias_usadas($h['conteudo']));
                 }
                 @unlink($f);
                 continue;
             }
-            $h = historico_ler($f);
             if ($h) {
-                $restam = array_merge($restam, conteudo_midias_usadas($h['conteudo']));
+                $usadas = conteudo_midias_usadas($h['conteudo']);
+                $restam = array_merge($restam, $usadas);
+                $candidatas = array_merge($candidatas, $usadas);
             }
         }
         $restam = array_flip($restam);
         foreach (array_unique($candidatas) as $arq) {
-            if (!isset($restam[$arq]) && midia_caminho($arq) !== null) {
+            if (isset($uso[$arq]) || midia_caminho($arq) === null) {
+                continue;
+            }
+            if (isset($restam[$arq])) {
+                midia_privada_guardar($arq);
+            } else {
                 lixeira_mover($arq);
             }
         }
@@ -590,6 +682,9 @@ function lixeira_dir(): string
 function lixeira_mover(string $arquivo): ?string
 {
     $origem = midia_caminho($arquivo);
+    if ($origem !== null && !is_file($origem)) {
+        $origem = midia_privada_caminho($arquivo);   // pode estar na área privada
+    }
     if ($origem === null || !is_file($origem)) {
         return null;
     }
@@ -599,9 +694,13 @@ function lixeira_mover(string $arquivo): ?string
         return null;
     }
     $tamanho = (int) filesize($origem);
-    if (!@rename($origem, $pasta . '/arquivo')) {
+    if (!midia_mover_arquivo($origem, $pasta . '/arquivo')) {
         @rmdir($pasta);
         return null;
+    }
+    $privado = midia_privada_caminho($arquivo);
+    if ($privado !== null && is_file($privado)) {
+        @unlink($privado);   // sobrou uma cópia privada: não deixa duplicado fora da lixeira
     }
     $meta = ['id' => $id, 'arquivo' => $arquivo, 'nome' => basename($arquivo), 'data' => date('c', seg_agora_conteudo()), 'tamanho' => $tamanho];
     file_put_contents($pasta . '/meta.json', conteudo_json($meta));
