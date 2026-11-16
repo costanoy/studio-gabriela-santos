@@ -80,10 +80,16 @@ function sessao_logada(): bool
 function sessao_entrar(string $senha): array
 {
     sessao_iniciar();
+    $ip = ip_cliente();
+    if (!tentativas_ok($ip)) {
+        return ['ok' => false, 'erro' => 'bloqueado', 'espera_min' => tentativas_espera_min($ip)];
+    }
     $hash = (string) config()['senha_hash'];
     if ($hash === '' || !password_verify($senha, $hash)) {
+        tentativas_registrar($ip);
         return ['ok' => false, 'erro' => 'senha'];
     }
+    tentativas_limpar($ip);
     // ID novo no login: um ID roubado antes do login não vale depois dele
     session_regenerate_id(true);
     $_SESSION = ['logado' => true, 'ultimo' => seg_agora()];
@@ -144,4 +150,108 @@ function cabecalhos_painel(): void
     foreach (cabecalhos_painel_lista() as $linha) {
         header($linha);
     }
+}
+
+// ---------------------------------------------------------------------------
+// Limite de tentativas de login e IP do visitante (T10)
+// ---------------------------------------------------------------------------
+
+const TENTATIVAS_MAX = 5;
+const TENTATIVAS_JANELA = 900; // 15 minutos
+
+/**
+ * IP de quem fez o pedido. O cabeçalho de proxy (ex.: X-Forwarded-For) só vale quando o pedido
+ * veio de um proxy listado em proxies_confiaveis; senão qualquer um poderia inventar o próprio IP.
+ */
+function ip_cliente(): string
+{
+    $cfg = config();
+    $remoto = (string) ($_SERVER['REMOTE_ADDR'] ?? '');
+    $cab = $cfg['ip_cabecalho'] ?? null;
+    if ($cab && in_array($remoto, $cfg['proxies_confiaveis'], true)) {
+        $valor = (string) ($_SERVER[$cab] ?? '');
+        // da direita para a esquerda: o primeiro endereço que não é proxy confiável
+        $lista = array_reverse(array_map('trim', explode(',', $valor)));
+        foreach ($lista as $ip) {
+            if (filter_var($ip, FILTER_VALIDATE_IP) && !in_array($ip, $cfg['proxies_confiaveis'], true)) {
+                return $ip;
+            }
+        }
+    }
+    return filter_var($remoto, FILTER_VALIDATE_IP) ? $remoto : '0.0.0.0';
+}
+
+function tentativas_arquivo(): string
+{
+    return config()['dados_dir'] . '/tentativas.json';
+}
+
+/** Lê, muda e grava o arquivo de tentativas com trava. $f recebe a lista e devolve a nova. */
+function tentativas_mexer(callable $f): array
+{
+    $dir = config()['dados_dir'];
+    if ($dir === '') {
+        return [];
+    }
+    if (!is_dir($dir)) {
+        @mkdir($dir, 0700, true);
+    }
+    $h = fopen(tentativas_arquivo(), 'c+');
+    if (!$h) {
+        return [];
+    }
+    flock($h, LOCK_EX);
+    $dados = json_decode((string) stream_get_contents($h), true);
+    $dados = is_array($dados) ? $dados : [];
+    $limite = seg_agora() - TENTATIVAS_JANELA;
+    foreach ($dados as $ip => $horas) {
+        $dados[$ip] = array_values(array_filter((array) $horas, static fn($t) => (int) $t > $limite));
+        if (!$dados[$ip]) {
+            unset($dados[$ip]);
+        }
+    }
+    $dados = $f($dados);
+    ftruncate($h, 0);
+    rewind($h);
+    fwrite($h, json_encode($dados));
+    fflush($h);
+    flock($h, LOCK_UN);
+    fclose($h);
+    return $dados;
+}
+
+/** true se este IP ainda pode tentar entrar (menos de 5 erros nos últimos 15 minutos). */
+function tentativas_ok(string $ip): bool
+{
+    $dados = tentativas_mexer(static fn($d) => $d);
+    return count($dados[$ip] ?? []) < TENTATIVAS_MAX;
+}
+
+function tentativas_registrar(string $ip): void
+{
+    tentativas_mexer(static function ($d) use ($ip) {
+        $d[$ip][] = seg_agora();
+        return $d;
+    });
+}
+
+function tentativas_limpar(string $ip): void
+{
+    tentativas_mexer(static function ($d) use ($ip) {
+        unset($d[$ip]);
+        return $d;
+    });
+}
+
+/** Minutos até o IP poder tentar de novo. */
+function tentativas_espera_min(string $ip): int
+{
+    $dados = tentativas_mexer(static fn($d) => $d);
+    $horas = $dados[$ip] ?? [];
+    if (count($horas) < TENTATIVAS_MAX) {
+        return 0;
+    }
+    sort($horas);
+    $libera = (int) $horas[count($horas) - TENTATIVAS_MAX] + TENTATIVAS_JANELA;
+    return max(1, (int) ceil(($libera - seg_agora()) / 60));
 }

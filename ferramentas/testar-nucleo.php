@@ -174,7 +174,64 @@ config_definir(array_merge($cfg_teste, ['cookie_secure' => true]));
 t(sessao_nome() === '__Host-sgs', 'com https o cookie usa o prefixo __Host- e Secure');
 config_definir(['senha_hash' => '', 'dados_dir' => $tmp]);
 t(sessao_entrar('qualquer')['ok'] === false, 'sem senha configurada ninguém entra');
+
+echo "\nT10 limite de tentativas e IP atrás da CDN\n";
+$cfg_t10 = array_merge($cfg_teste, ['ip_cabecalho' => 'HTTP_X_FORWARDED_FOR', 'proxies_confiaveis' => ['10.0.0.1']]);
+config_definir($cfg_t10);
+$_SERVER['REMOTE_ADDR'] = '203.0.113.9';
+$_SERVER['HTTP_X_FORWARDED_FOR'] = '198.51.100.7';
+t(ip_cliente() === '203.0.113.9', 'cabeçalho de proxy é ignorado se REMOTE_ADDR não é proxy confiável');
+$_SERVER['REMOTE_ADDR'] = '10.0.0.1';
+t(ip_cliente() === '198.51.100.7', 'REMOTE_ADDR confiável: usa o IP do cabeçalho');
+$_SERVER['HTTP_X_FORWARDED_FOR'] = '1.2.3.4, 198.51.100.7, 10.0.0.1';
+t(ip_cliente() === '198.51.100.7', 'lista do cabeçalho: lê da direita e pula proxy confiável (IP inventado à esquerda não vale)');
+$_SERVER['HTTP_X_FORWARDED_FOR'] = 'lixo';
+t(ip_cliente() === '10.0.0.1', 'cabeçalho inválido volta para REMOTE_ADDR');
+
+$_SERVER['REMOTE_ADDR'] = '203.0.113.50';
+unset($_SERVER['HTTP_X_FORWARDED_FOR']);
+$GLOBALS['__nucleo_teste']['agora'] = 5000000;
+for ($i = 1; $i <= 5; $i++) {
+    $r = sessao_entrar('errada' . $i);
+    t($r['ok'] === false && $r['erro'] === 'senha', "tentativa errada $i volta senha incorreta");
+}
+$r = sessao_entrar($senha_teste);
+t($r['ok'] === false && $r['erro'] === 'bloqueado' && $r['espera_min'] >= 1 && $r['espera_min'] <= 15, 'a 6ª tentativa em 15 min é bloqueada, mesmo com a senha certa');
+$_SERVER['REMOTE_ADDR'] = '203.0.113.51';
+t(sessao_entrar($senha_teste)['ok'] === true, 'outro IP não é afetado pelo bloqueio');
+sessao_sair();
+$_SERVER['REMOTE_ADDR'] = '203.0.113.50';
+$GLOBALS['__nucleo_teste']['agora'] = 5000000 + 901;
+t(sessao_entrar($senha_teste)['ok'] === true, 'passados 15 min o IP volta a poder entrar');
+sessao_sair();
+$GLOBALS['__nucleo_teste']['agora'] = 6000000;
+for ($i = 0; $i < 4; $i++) {
+    sessao_entrar('errada');
+}
+t(sessao_entrar($senha_teste)['ok'] === true, 'com 4 erros ainda entra');
+sessao_sair();
+for ($i = 0; $i < 4; $i++) {
+    sessao_entrar('errada');
+}
+t(sessao_entrar($senha_teste)['ok'] === true, 'sucesso zera a contagem: mais 4 erros depois ainda não bloqueiam');
+sessao_sair();
+sessao_entrar('errada');
+t(strpos((string) file_get_contents($tmp . '/tentativas.json'), '203.0.113.50') !== false, 'tentativas ficam em dados_dir/tentativas.json');
+unset($_SERVER['REMOTE_ADDR'], $_SERVER['HTTP_X_FORWARDED_FOR']);
 config_definir(null);
+
+// limpa a pasta temporária dos testes
+function limpar_pasta(string $d): void
+{
+    foreach (glob($d . '/{,.}*', GLOB_BRACE) ?: [] as $f) {
+        if (in_array(basename($f), ['.', '..'], true)) {
+            continue;
+        }
+        is_dir($f) ? limpar_pasta($f) : @unlink($f);
+    }
+    @rmdir($d);
+}
+limpar_pasta($tmp);
 
 echo "\n";
 if ($falhas) {
