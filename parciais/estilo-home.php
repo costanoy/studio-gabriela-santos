@@ -238,16 +238,18 @@
     #footer-menus, #footer-cursos { display: none !important; }
     footer a { min-height: 44px; box-sizing: border-box; display: flex; align-items: center; }
     .mobile-scroll-arrow { display: flex !important; }
+    .carrossel { padding-bottom: 64px; }
+    .carrossel > button { top: auto !important; bottom: 0 !important; transform: none !important; }
+    .carrossel > button:first-of-type { left: calc(50% - 96px) !important; right: auto !important; }
+    .carrossel > button:last-of-type { right: calc(50% - 96px) !important; left: auto !important; }
+    .carrossel-contador { display: block !important; position: absolute; bottom: 0; left: 50%; transform: translateX(-50%); height: 44px; line-height: 44px; font-size: 16px; font-weight: 700; color: #FBF3EE; white-space: nowrap; }
+    #resultados .carrossel-contador, #depoimentos .carrossel-contador { color: #3A2A22; }
     #resultados-grid { display: flex !important; overflow-x: auto; scroll-snap-type: x proximity; -webkit-overflow-scrolling: touch; }
     #resultados-grid > * { flex: 0 0 78%; scroll-snap-align: start; }
     #ver-mais-cell { display: none !important; }
     #ver-mais-mobile { display: flex !important; }
-    #procedimentos-arrow-left { left: 4px !important; }
-    #procedimentos-arrow-right { right: 4px !important; }
     #procedimentos-grid { padding-left: 10%; padding-right: 10%; }
     #procedimentos-grid > * { flex: 0 0 78% !important; scroll-snap-align: center; }
-    #depoimentos-arrow-left { left: 4px !important; }
-    #depoimentos-arrow-right { right: 4px !important; }
     #depoimentos-grid { padding-left: 6%; padding-right: 6%; }
     #depoimentos-grid > * { flex: 0 0 84% !important; scroll-snap-align: center; }
     #hero-content { padding-top: 0px !important; padding-bottom: 40px !important; }
@@ -255,6 +257,7 @@
   }
   #procedimentos-grid::-webkit-scrollbar, #resultados-grid::-webkit-scrollbar, #depoimentos-grid::-webkit-scrollbar { display: none; }
   #procedimentos-grid, #resultados-grid, #depoimentos-grid { scrollbar-width: none; }
+  .carrossel-contador { display: none; }
   #site-header { transition: padding 0.25s ease; }
   #logo-full, #logo-gs { transition: height 0.25s ease, width 0.25s ease, opacity 0.2s ease; }
   #site-header.scrolled { padding: 8px 24px !important; }

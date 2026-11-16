@@ -73,6 +73,21 @@ function scrollByCard(gridId, dir) {
   const alvo = Math.min(atual.cards.length - 1, Math.max(0, atual.idx + dir));
   grid.scrollTo({ left: atual.cards[alvo].offsetLeft, behavior: 'smooth' });
 }
+function atualizarContadores() {
+  document.querySelectorAll('.carrossel-contador').forEach(function (el) {
+    const grid = document.getElementById(el.getAttribute('data-grid'));
+    if (!grid) return;
+    const a = cartaoAtual(grid);
+    if (a.cards.length) el.textContent = (a.idx + 1) + ' de ' + a.cards.length;
+  });
+}
+['procedimentos-grid', 'resultados-grid', 'depoimentos-grid'].forEach(function (id) {
+  const g = document.getElementById(id);
+  if (g) g.addEventListener('scroll', atualizarContadores, { passive: true });
+});
+window.addEventListener('resize', atualizarContadores);
+window.addEventListener('load', atualizarContadores);
+atualizarContadores();
 function toggleCurso(id, btn) {
   const el = document.getElementById(id);
   const open = el.style.display === 'grid';

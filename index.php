@@ -91,7 +91,7 @@ parcial('estilo-home');
     <div style="max-width:1280px; margin:0 auto;">
       <p style="font-size:13px; letter-spacing:0.15em; text-transform:uppercase; color:#F3E4DA; font-weight:700; margin:0 0 14px; text-align:center;"><?= e($h['procedimentos']['rotulo']) ?></p>
       <h2 style="font-family:'Marcellus', serif; font-size: clamp(30px, 3vw, 42px); margin: 0 0 56px; color:#FBF3EE; text-align:center;"><?= e($h['procedimentos']['titulo']) ?></h2>
-      <div style="position:relative;">
+      <div class="carrossel" style="position:relative;">
       <div id="procedimentos-grid" style="display:flex; overflow-x:auto; scroll-snap-type:x proximity; -webkit-overflow-scrolling:touch; gap: 16px; padding-bottom:8px; user-select:none; cursor:grab;">
 <?php foreach ($h['procedimentos']['itens'] as $proc): ?>
         <div style="background:#6B4A39; border-radius:20px; padding: 40px 32px; min-height:230px; box-sizing:border-box; flex:0 0 300px; scroll-snap-align:start;">
@@ -108,6 +108,7 @@ parcial('estilo-home');
         <?= $seta_dir ?>
 
       </button>
+      <span class="carrossel-contador" data-grid="procedimentos-grid"></span>
       </div>
     </div>
   </section>
@@ -116,7 +117,7 @@ parcial('estilo-home');
     <div style="max-width:1280px; margin:0 auto;">
       <p style="font-size:13px; letter-spacing:0.15em; text-transform:uppercase; color:#7D5843; font-weight:700; margin:0 0 14px; text-align:center;"><?= e($h['resultados']['rotulo']) ?></p>
       <h2 style="font-family:'Marcellus', serif; font-size: clamp(30px, 3vw, 42px); margin: 0 0 56px; color:#3A2A22; text-align:center;"><?= e($h['resultados']['titulo']) ?></h2>
-      <div style="position:relative;">
+      <div class="carrossel" style="position:relative;">
       <div id="resultados-grid" style="display:grid; grid-template-columns: repeat(auto-fit, minmax(320px, 1fr)); gap: 40px;">
 <?php foreach (resultados_home($c) as $item): ?>
 
@@ -146,6 +147,7 @@ parcial('estilo-home');
         <?= $seta_dir_marrom ?>
 
       </button>
+      <span class="carrossel-contador" data-grid="resultados-grid"></span>
       </div>
       <a id="ver-mais-mobile" href="resultados.html" style="display:none; margin-top:48px; align-items:center; justify-content:center; gap:10px; text-decoration:none; color:#FBF3EE; font-weight:700; font-size:18px; background:#7D5843; border-radius:14px; padding:14px 22px;">
         <?= e($h['resultados']['texto_ver_mais']) ?>
@@ -204,7 +206,7 @@ parcial('estilo-home');
     <div style="max-width:1280px; margin:0 auto;">
       <p style="font-size:13px; letter-spacing:0.15em; text-transform:uppercase; color:#7D5843; font-weight:700; margin:0 0 14px; text-align:center;"><?= e($h['depoimentos']['rotulo']) ?></p>
       <h2 style="font-family:'Marcellus', serif; font-size: clamp(30px, 3vw, 42px); margin: 0 0 56px; color:#3A2A22; text-align:center;"><?= e($h['depoimentos']['titulo']) ?></h2>
-      <div style="position:relative;">
+      <div class="carrossel" style="position:relative;">
       <div id="depoimentos-grid" style="display:flex; overflow-x:auto; scroll-snap-type:x proximity; -webkit-overflow-scrolling:touch; gap: 32px; padding-bottom:8px; user-select:none;">
 <?php foreach ($h['depoimentos']['itens'] as $dep): ?>
         <div style="background:#F3E4DA; padding: 36px 32px; border-radius:20px; display:flex; flex-direction:column; height:100%; box-sizing:border-box; flex:0 0 340px; scroll-snap-align:start;">
@@ -230,6 +232,7 @@ parcial('estilo-home');
         <?= $seta_dir ?>
 
       </button>
+      <span class="carrossel-contador" data-grid="depoimentos-grid"></span>
       </div>
     </div>
   </section>
