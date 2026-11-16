@@ -1,0 +1,97 @@
+# resumo: {"failed":1,"passed":83,"skipped":12}
+failed | iphone-chromium | index.html > comparadores antes/depois com toque (tap e arrastar)
+passed | desktop | index.html > Inicio volta ao topo e troca hash
+passed | desktop | index.html > Ver mais leva a resultados.html
+passed | desktop | index.html > animacoes reveal deixam secoes visiveis
+passed | desktop | index.html > arrastar carrossel de procedimentos com mouse
+passed | desktop | index.html > carrega sem erros de JS e com titulo
+passed | desktop | index.html > carrosseis: setas movem o scroll
+passed | desktop | index.html > comparadores antes/depois com mouse (arrastar)
+passed | desktop | index.html > contato e rodape
+passed | desktop | index.html > cursos: ver descricao completa abre e fecha
+passed | desktop | index.html > imagens carregam (sem quebradas)
+passed | desktop | index.html > links externos corretos, target=_blank e rel=noopener
+passed | desktop | index.html > links externos respondem (rede)
+passed | desktop | index.html > logo troca no scroll
+passed | desktop | index.html > mapa embed e botao Google Maps
+passed | desktop | index.html > menu desktop visivel e hamburguer escondido
+passed | desktop | index.html > navegacao por ancoras
+passed | desktop | index.html > sem overflow horizontal
+passed | desktop | resultados.html > carrega, logo troca e voltar
+passed | desktop | resultados.html > comparadores (5) mouse/toque
+passed | desktop | resultados.html > links externos seguros e rodape aponta para index
+passed | desktop | resultados.html > mp4 nao baixados por inteiro antes do play
+passed | desktop | resultados.html > video corrente-1: poster, sem tela preta, tocar
+passed | desktop | resultados.html > video corrente-2: poster, sem tela preta, tocar
+passed | desktop | resultados.html > video liposhape-depois3: poster, sem tela preta, tocar
+passed | desktop | resultados.html > video liposhape-pos: poster, sem tela preta, tocar
+passed | desktop | resultados.html > video ultrassom-depois1: poster, sem tela preta, tocar
+passed | desktop | video da home > nao baixa o video inteiro antes do play
+passed | desktop | video da home > poster existe, carrega e nao ha tela preta antes do play
+passed | desktop | video da home > toca ao clicar no overlay e pausa ao clicar de novo
+passed | iphone-chromium | index.html > Inicio volta ao topo e troca hash
+passed | iphone-chromium | index.html > Ver mais leva a resultados.html
+passed | iphone-chromium | index.html > animacoes reveal deixam secoes visiveis
+passed | iphone-chromium | index.html > carrega sem erros de JS e com titulo
+passed | iphone-chromium | index.html > carrosseis: setas movem o scroll
+passed | iphone-chromium | index.html > carrossel de resultados (setas no celular)
+passed | iphone-chromium | index.html > comparadores antes/depois com mouse (arrastar)
+passed | iphone-chromium | index.html > contato e rodape
+passed | iphone-chromium | index.html > cursos: ver descricao completa abre e fecha
+passed | iphone-chromium | index.html > imagens carregam (sem quebradas)
+passed | iphone-chromium | index.html > links externos corretos, target=_blank e rel=noopener
+passed | iphone-chromium | index.html > logo troca no scroll
+passed | iphone-chromium | index.html > mapa embed e botao Google Maps
+passed | iphone-chromium | index.html > menu mobile abre e fecha
+passed | iphone-chromium | index.html > navegacao por ancoras
+passed | iphone-chromium | index.html > sem overflow horizontal
+passed | iphone-chromium | resultados.html > carrega, logo troca e voltar
+passed | iphone-chromium | resultados.html > comparadores (5) mouse/toque
+passed | iphone-chromium | resultados.html > links externos seguros e rodape aponta para index
+passed | iphone-chromium | resultados.html > mp4 nao baixados por inteiro antes do play
+passed | iphone-chromium | resultados.html > video corrente-1: poster, sem tela preta, tocar
+passed | iphone-chromium | resultados.html > video corrente-2: poster, sem tela preta, tocar
+passed | iphone-chromium | resultados.html > video liposhape-depois3: poster, sem tela preta, tocar
+passed | iphone-chromium | resultados.html > video liposhape-pos: poster, sem tela preta, tocar
+passed | iphone-chromium | resultados.html > video ultrassom-depois1: poster, sem tela preta, tocar
+passed | iphone-chromium | video da home > nao baixa o video inteiro antes do play
+passed | iphone-chromium | video da home > poster existe, carrega e nao ha tela preta antes do play
+passed | iphone-chromium | video da home > toca ao clicar no overlay e pausa ao clicar de novo
+passed | iphone-webkit | index.html > Inicio volta ao topo e troca hash
+passed | iphone-webkit | index.html > Ver mais leva a resultados.html
+passed | iphone-webkit | index.html > animacoes reveal deixam secoes visiveis
+passed | iphone-webkit | index.html > carrega sem erros de JS e com titulo
+passed | iphone-webkit | index.html > carrosseis: setas movem o scroll
+passed | iphone-webkit | index.html > carrossel de resultados (setas no celular)
+passed | iphone-webkit | index.html > comparadores antes/depois com toque (tap e arrastar)
+passed | iphone-webkit | index.html > contato e rodape
+passed | iphone-webkit | index.html > cursos: ver descricao completa abre e fecha
+passed | iphone-webkit | index.html > imagens carregam (sem quebradas)
+passed | iphone-webkit | index.html > links externos corretos, target=_blank e rel=noopener
+passed | iphone-webkit | index.html > logo troca no scroll
+passed | iphone-webkit | index.html > mapa embed e botao Google Maps
+passed | iphone-webkit | index.html > menu mobile abre e fecha
+passed | iphone-webkit | index.html > navegacao por ancoras
+passed | iphone-webkit | index.html > sem overflow horizontal
+passed | iphone-webkit | resultados.html > carrega, logo troca e voltar
+passed | iphone-webkit | resultados.html > comparadores (5) mouse/toque
+passed | iphone-webkit | resultados.html > links externos seguros e rodape aponta para index
+passed | iphone-webkit | resultados.html > video corrente-1: poster, sem tela preta, tocar
+passed | iphone-webkit | resultados.html > video corrente-2: poster, sem tela preta, tocar
+passed | iphone-webkit | resultados.html > video liposhape-depois3: poster, sem tela preta, tocar
+passed | iphone-webkit | resultados.html > video liposhape-pos: poster, sem tela preta, tocar
+passed | iphone-webkit | resultados.html > video ultrassom-depois1: poster, sem tela preta, tocar
+passed | iphone-webkit | video da home > poster existe, carrega e nao ha tela preta antes do play
+passed | iphone-webkit | video da home > toca ao clicar no overlay e pausa ao clicar de novo
+skipped | desktop | index.html > carrossel de resultados (setas no celular)
+skipped | desktop | index.html > comparadores antes/depois com toque (tap e arrastar)
+skipped | desktop | index.html > menu mobile abre e fecha
+skipped | iphone-chromium | index.html > arrastar carrossel de procedimentos com mouse
+skipped | iphone-chromium | index.html > links externos respondem (rede)
+skipped | iphone-chromium | index.html > menu desktop visivel e hamburguer escondido
+skipped | iphone-webkit | index.html > arrastar carrossel de procedimentos com mouse
+skipped | iphone-webkit | index.html > comparadores antes/depois com mouse (arrastar)
+skipped | iphone-webkit | index.html > links externos respondem (rede)
+skipped | iphone-webkit | index.html > menu desktop visivel e hamburguer escondido
+skipped | iphone-webkit | resultados.html > mp4 nao baixados por inteiro antes do play
+skipped | iphone-webkit | video da home > nao baixa o video inteiro antes do play

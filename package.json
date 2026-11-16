@@ -1,6 +1,6 @@
 {
   "name": "studio-gabriela-santos-testes",
   "private": true,
-  "scripts": { "test": "playwright test" },
+  "scripts": { "test": "playwright test", "previa": "node ferramentas/previa.mjs" },
   "devDependencies": { "@playwright/test": "^1.49.0" }
 }

@@ -28,3 +28,10 @@ playwright-report/
 .auditoria/*.json
 .auditoria/*.log
 .auditoria/*.png
+
+# Prévia local, publicação e mídia enviada pelo painel
+.local/
+publicar/
+painel-config*.php
+conteudo/midia/*
+!conteudo/midia/.htaccess

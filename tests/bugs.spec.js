@@ -51,8 +51,8 @@ test.describe('L01 video de apresentacao', () => {
 
   test('L01 caixa do video tem proporcao 576/1024 ja no HTML/CSS (sem depender do JS dos metadados)', async ({ browser }) => {
     const ctx = await browser.newContext({ javaScriptEnabled: false }); const page = await ctx.newPage();
-    await page.goto('http://localhost:8765/index.html');
-    const ar = await page.locator('#apresentacao-video').evaluate((v) => getComputedStyle(v).aspectRatio.replace(/\s/g, ''));
+    await page.goto('/index.html');
+    const ar =await page.locator('#apresentacao-video').evaluate((v) => getComputedStyle(v).aspectRatio.replace(/\s/g, ''));
     await ctx.close();
     console.log('L01 aspect-ratio sem JS =', ar);
     expect(ar).toBe('576/1024');
@@ -383,7 +383,7 @@ test.describe('S8 sem JS / movimento reduzido', () => {
   test('S8/L06 com JS desligado as secoes .reveal continuam visiveis', async ({ browser }) => {
     const ctx = await browser.newContext({ javaScriptEnabled: false });
     const page = await ctx.newPage();
-    await page.goto('http://localhost:8765/index.html');
+    await page.goto('/index.html');
     const ops = await page.$$eval('.reveal', (els) => els.map((e) => +getComputedStyle(e).opacity));
     await ctx.close();
     console.log('S8 opacidades sem JS:', ops.join(','));

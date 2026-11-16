@@ -284,7 +284,7 @@ test.describe('resultados.html', () => {
     await expect(page.locator('h1')).toContainText(/resultados/i);
     await page.evaluate(() => window.scrollTo(0, 600));
     await expect(page.locator('#site-header')).toHaveClass(/scrolled/);
-    await Promise.all([page.waitForURL(/index\.html|localhost:8765\/(#.*)?$/), page.locator('#rc-back-link').click()]);
+    await Promise.all([page.waitForURL(/index\.html|localhost:\d+\/(#.*)?$/), page.locator('#rc-back-link').click()]);
   });
 
   test('comparadores (5) mouse/toque', async ({ page }, ti) => {
