@@ -108,7 +108,7 @@ test.describe('index.html', () => {
   test('comparadores antes/depois com toque (tap e arrastar)', async ({ page, browserName }, ti) => {
     test.skip(!isMobile(ti), 'so celular');
     const s = page.locator('#resultados-grid input[type=range]').first();
-    await s.scrollIntoViewIfNeeded();
+    await s.evaluate((el) => el.scrollIntoView({ block: 'center', behavior: 'instant' })); await page.waitForTimeout(900);
     const b = await s.boundingBox();
     await page.touchscreen.tap(b.x + b.width * 0.2, b.y + b.height / 2);
     const v1 = +(await s.inputValue()); console.log('valor apos tap 20%:', v1);

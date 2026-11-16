@@ -97,9 +97,8 @@ test.describe('L02 / T02 / T01 peso da pagina e videos', () => {
 
   test('T01 fotos dos comparadores nao tem mais de 1000 px de largura (aparecem em ~350-450 px)', async ({ page }) => {
     await page.goto('/resultados.html');
-    const srcs = await page.$$eval('input[type=range]', (rs) => rs.flatMap((r) => [...r.closest('div').querySelectorAll('img')].map((i) => i.getAttribute('src'))));
-    const larg = (f) => { const b = fs.readFileSync(path.join(ROOT, f)); let i = 2; while (i < b.length) { if (b[i] !== 0xFF) { i++; continue; } const m = b[i + 1]; if (m >= 0xC0 && m <= 0xCF && m !== 0xC4 && m !== 0xC8 && m !== 0xCC) return b.readUInt16BE(i + 7); i += 2 + b.readUInt16BE(i + 2); } return 0; };
-    const dims = srcs.map((f) => [f, larg(f)]);
+    await page.evaluate(async () => { for (const i of document.querySelectorAll('img')) { i.loading = 'eager'; } await Promise.all([...document.images].map((i) => i.complete ? 0 : new Promise((r) => { i.onload = i.onerror = r; }))); });
+    const dims = await page.$$eval('input[type=range]', (rs) => rs.flatMap((r) => [...r.closest('div').querySelectorAll('img')].map((i) => [i.getAttribute('src'), i.naturalWidth])));
     const ruins = dims.filter(([, w]) => w > 1000);
     console.log('T01 larguras:', JSON.stringify(dims));
     expect(dims.length).toBe(10);
@@ -290,7 +289,7 @@ test('S6 setas do carrossel de Procedimentos nao cobrem texto (celular)', async 
 
 test.describe('L05 setas do carrossel sem o evento scrollend (iOS <= 26.1)', () => {
   for (const grid of ['procedimentos-grid', 'depoimentos-grid', 'resultados-grid']) {
-    test(`L05 ${grid}: depois de deslizar ate o card 4, a seta "proximo" avanca exatamente 1`, async ({ page }, ti) => {
+    test(`L05 ${grid}: depois de deslizar ate o card 4 (ou o penultimo), a seta "proximo" avanca exatamente 1`, async ({ page }, ti) => {
       test.skip(!isMobile(ti), 'so celular');
       await page.addInitScript(() => {
         const orig = EventTarget.prototype.addEventListener;
@@ -301,7 +300,7 @@ test.describe('L05 setas do carrossel sem o evento scrollend (iOS <= 26.1)', () 
       const g = page.locator('#' + grid); await g.scrollIntoViewIfNeeded();
       const atual = () => g.evaluate((el) => { const c = [...el.children]; const mid = el.scrollLeft + el.clientWidth / 2; let best = 0, d = 1e9; c.forEach((x, i) => { const dd = Math.abs(x.offsetLeft + x.offsetWidth / 2 - mid); if (dd < d) { d = dd; best = i; } }); return best; });
       // desliza com o dedo (simulado) ate o 4o card, sem animacao e sem snap
-      await g.evaluate((el) => { el.style.scrollSnapType = 'none'; el.style.scrollBehavior = 'auto'; const c = el.children[3]; el.scrollLeft = c.offsetLeft + c.offsetWidth / 2 - el.clientWidth / 2; });
+      await g.evaluate((el) => { el.style.scrollSnapType = 'none'; el.style.scrollBehavior = 'auto'; const c = el.children[Math.min(3, el.children.length - 2)]; el.scrollLeft = c.offsetLeft + c.offsetWidth / 2 - el.clientWidth / 2; });
       await page.waitForTimeout(300);
       await g.evaluate((el) => { el.style.scrollSnapType = ''; el.style.scrollBehavior = ''; });
       await page.waitForTimeout(600);
@@ -310,7 +309,7 @@ test.describe('L05 setas do carrossel sem o evento scrollend (iOS <= 26.1)', () 
       await page.waitForTimeout(1500);
       const depois = await atual();
       console.log(`L05 ${grid}: card ${antes} -> ${depois}`);
-      expect(antes).toBeGreaterThanOrEqual(3);
+      expect(antes).toBeGreaterThanOrEqual(Math.min(3, (await g.evaluate((el) => el.children.length)) - 2));
       expect(depois).toBe(antes + 1);
     });
   }
@@ -409,7 +408,9 @@ test.describe('L03 camada sobre os videos', () => {
   for (const [p, sel] of casos) {
     test(`L03 ${p}: o canto superior do video (tela cheia/PiP/volume no iPhone) recebe o toque, nao uma camada`, async ({ page }) => {
       await page.goto(p);
-      const v = page.locator(sel).first(); await v.scrollIntoViewIfNeeded();
+      const v = page.locator(sel).first();
+      // centraliza o video: o cabecalho fixo cobrir o que rola por baixo dele e normal, o teste e sobre camadas no proprio video
+      await v.evaluate((el) => el.scrollIntoView({ block: 'center', behavior: 'instant' })); await page.waitForTimeout(300);
       const r = await v.evaluate((el) => { const b = el.getBoundingClientRect(); const e = document.elementFromPoint(b.left + 14, b.top + 14); return { tag: e && e.tagName, ehVideo: e === el }; });
       console.log('L03', p, JSON.stringify(r));
       expect(r.ehVideo).toBe(true);
@@ -446,7 +447,9 @@ test.describe('L04/S3 comparador', () => {
   test('L04/S3 arrastar sobre a FOTO move o corte (toque, Chromium)', async ({ page, browserName }, ti) => {
     test.skip(!isMobile(ti) || !isChromium(browserName), 'toque no Chromium via CDP');
     await page.goto('/index.html');
-    const s = page.locator('#resultados-grid input[type=range]').first(); await s.scrollIntoViewIfNeeded();
+    const s = page.locator('#resultados-grid input[type=range]').first();
+    await s.evaluate((el) => { const q = el.closest('.ba'); const r = q.getBoundingClientRect(); window.scrollTo({ top: window.scrollY + r.top - (innerHeight - r.height) / 2, behavior: 'instant' }); });
+    await page.waitForTimeout(900);
     const b = await s.locator('xpath=..').boundingBox();
     const cdp = await page.context().newCDPSession(page);
     const y = b.y + b.height * 0.4; const x0 = b.x + b.width * 0.25;

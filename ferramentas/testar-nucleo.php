@@ -307,7 +307,7 @@ t(!is_file($midia_t . '/a.webp'), 'mídia que nenhuma versão usa mais sai da pa
 $lx = lixeira_listar();
 t(count($lx) === 1 && $lx[0]['arquivo'] === 'conteudo/midia/a.webp' && preg_match('/^\d{8}-\d{6}-[0-9a-f]+$/', $lx[0]['id']) === 1, 'a mídia está na lixeira com meta (id Ymd-His-hex)');
 t(is_file($tmp . '/lixeira/' . $lx[0]['id'] . '/meta.json'), 'lixeira/<id>/meta.json existe');
-t(lixeira_mover('assets/hero-bg.png') === null && is_file(RAIZ . '/assets/hero-bg.png'), 'assets/ nunca vai para a lixeira');
+t(lixeira_mover('assets/hero-bg.webp') === null && is_file(RAIZ . '/assets/hero-bg.webp'), 'assets/ nunca vai para a lixeira');
 t(lixeira_mover('conteudo/midia/../../index.php') === null && is_file(RAIZ . '/index.php'), 'caminho com .. é recusado');
 t(lixeira_restaurar($lx[0]['id']) === true && is_file($midia_t . '/a.webp') && !lixeira_listar(), 'lixeira_restaurar devolve a mídia ao lugar');
 lixeira_mover('conteudo/midia/a.webp');

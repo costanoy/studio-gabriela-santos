@@ -272,11 +272,16 @@ test.describe('P6 textos com limites', () => {
 // ===========================================================================
 const STUB_MIDIA = () => {
   window.PainelMidia = {
-    escolherFoto: (o) => { if (o && o.onProgresso) o.onProgresso(0.5); return Promise.resolve({ arquivo: 'assets/results/drenagem-antes1.jpeg', largura: 1180, altura: 1600 }); },
-    escolherVideo: () => Promise.resolve({ arquivo: 'assets/results/corrente-1.mp4', poster: 'assets/img/5c2dbddb.jpg', largura: 1024, altura: 576 }),
+    escolherFoto: (o) => { if (o && o.onProgresso) o.onProgresso(0.5); return Promise.resolve({ arquivo: 'assets/results/drenagem-antes1.webp', largura: 1180, altura: 1600 }); },
+    escolherVideo: () => Promise.resolve({ arquivo: 'assets/results/corrente-1.mp4', poster: 'assets/posteres/corrente-1.webp', largura: 1024, altura: 576 }),
     mensagemErro: (c) => 'Erro de teste ' + c
   };
 };
+
+// O midia.js de verdade (Lote 2B) substituiria o stub; nestes testes ele é bloqueado.
+async function semMidiaReal(page) {
+  await page.route('**/painel/midia.js*', (route) => route.fulfill({ status: 200, contentType: 'text/javascript', body: '' }));
+}
 
 async function abrirItem(page, id) {
   await page.click('#cartao-resultados');
@@ -426,6 +431,7 @@ test.describe('P2 resultados e enquadramento', () => {
   });
 
   test('novo antes e depois com o módulo de fotos (stub)', async ({ page }) => {
+    await semMidiaReal(page);
     await page.addInitScript(STUB_MIDIA);
     await entrar(page);
     await page.click('#cartao-resultados');
@@ -447,6 +453,7 @@ test.describe('P2 resultados e enquadramento', () => {
   });
 
   test('novo vídeo com o módulo de fotos (stub)', async ({ page }) => {
+    await semMidiaReal(page);
     await page.addInitScript(STUB_MIDIA);
     await entrar(page);
     await page.click('#cartao-resultados');
@@ -460,10 +467,11 @@ test.describe('P2 resultados e enquadramento', () => {
     const lido = await chamar(page, { acao: 'ler' });
     const v = lido.conteudo.resultados.itens.find((x) => x.rotulo === 'Vídeo novo');
     expect(v.tipo).toBe('video');
-    expect(v.poster).toBe('assets/img/5c2dbddb.jpg');
+    expect(v.poster).toBe('assets/posteres/corrente-1.webp');
   });
 
   test('sem o módulo de envio, mostra aviso simples', async ({ page }) => {
+    await semMidiaReal(page);
     await entrar(page);
     await page.click('#cartao-resultados');
     await page.click('#novo-comparacao');
@@ -549,7 +557,7 @@ test.describe('L13 versões e Desfazer', () => {
     const pasta = path.join(__dirname, '..', 'conteudo', 'midia');
     const arquivo = path.join(pasta, 'lixeira-teste.jpg');
     fs.mkdirSync(pasta, { recursive: true });
-    fs.copyFileSync(path.join(__dirname, '..', 'assets', 'results', 'drenagem-antes1.jpeg'), arquivo);
+    fs.copyFileSync(path.join(__dirname, '..', 'assets', 'results', 'drenagem-antes1.webp'), arquivo);
     try {
       await entrar(page);
       const trocar = async (arq, rev) => {
@@ -628,7 +636,7 @@ test.describe('P3 apagar e lixeira', () => {
     const pasta = path.join(__dirname, '..', 'conteudo', 'midia');
     const arquivo = path.join(pasta, 'lixeira-teste.jpg');
     fs.mkdirSync(pasta, { recursive: true });
-    fs.copyFileSync(path.join(__dirname, '..', 'assets', 'results', 'drenagem-antes1.jpeg'), arquivo);
+    fs.copyFileSync(path.join(__dirname, '..', 'assets', 'results', 'drenagem-antes1.webp'), arquivo);
     try {
       await entrar(page);
       const trocar = async (arq, rev) => {

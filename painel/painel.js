@@ -795,6 +795,10 @@
       p = fn.call(M, {
         csrf: csrf(),
         onProgresso: function (v) {
+          if (v && typeof v === 'object') {
+            if (v.texto) { progresso.textContent = String(v.texto); return; }
+            v = v.percentual;
+          }
           var n = Number(v);
           if (!isFinite(n)) return;
           if (n <= 1) n = n * 100;
@@ -807,7 +811,7 @@
       ok(r);
     }, function (e) {
       progresso.textContent = '';
-      if (e && e.cancelado) return;
+      if (e && (e.cancelado || e.codigo === 'cancelado')) return;
       var cod = e && (e.codigo || e.erro || e.message || e);
       var t = '';
       try { t = M.mensagemErro(cod); } catch (x) { t = ''; }
