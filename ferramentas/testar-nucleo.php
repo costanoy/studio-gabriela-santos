@@ -80,6 +80,19 @@ t(substr_count($h4, 'Horário de teste 9h') === 1, 'horário do JSON aparece no 
 t(strpos($h4, '5562984141116') === false && strpos($h4, '5511999990000') !== false, 'link do WhatsApp usa contato.whatsapp');
 t(strpos($h4, '8h às 17h') === false, 'nenhum horário escrito à mão sobra');
 
+echo "\nT06 canonical, sitemap e 404\n";
+preg_match('#<link rel="canonical" href="([^"]+)"#', renderizar('home', $padrao), $mh);
+preg_match('#<link rel="canonical" href="([^"]+)"#', renderizar('resultados', $padrao), $mr);
+t(($mh[1] ?? '') === 'https://studiogabrielasantos.com.br/', 'canonical da home é a raiz');
+t(($mr[1] ?? '') === 'https://studiogabrielasantos.com.br/resultados.html', 'canonical de resultados é /resultados.html');
+$sitemap = (string) file_get_contents(RAIZ . '/sitemap.xml');
+t(strpos($sitemap, '<loc>' . $mh[1] . '</loc>') !== false && strpos($sitemap, '<loc>' . $mr[1] . '</loc>') !== false, 'sitemap tem as mesmas duas URLs dos canonical');
+t(substr_count($sitemap, '<loc>') === 2, 'sitemap tem só 2 URLs');
+$htaccess = (string) file_get_contents(RAIZ . '/.htaccess');
+t(strpos($htaccess, 'ErrorDocument 404 /404.php') !== false, '.htaccess aponta o 404 para 404.php');
+t(strpos($htaccess, 'index\.php$ / [R=301') !== false && strpos($htaccess, 'resultados\.php$ /resultados.html [R=301') !== false, '.htaccess: /index.php e /resultados.php dão 301');
+t(is_file(RAIZ . '/404.php'), '404.php existe');
+
 echo "\n";
 if ($falhas) {
     echo count($falhas) . " falha(s), $ok ok.\n";

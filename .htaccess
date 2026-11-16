@@ -1,0 +1,17 @@
+# Studio Gabriela Santos - regras do servidor (Hostinger, Apache/LiteSpeed)
+
+DirectoryIndex index.php
+ErrorDocument 404 /404.php
+
+<IfModule mod_rewrite.c>
+RewriteEngine On
+
+# Uma URL só por página: /index.php e /resultados.php voltam para o endereço público (301)
+RewriteCond %{THE_REQUEST} \s/index\.php[\s?] [NC]
+RewriteRule ^index\.php$ / [R=301,L]
+RewriteCond %{THE_REQUEST} \s/resultados\.php[\s?] [NC]
+RewriteRule ^resultados\.php$ /resultados.html [R=301,L]
+
+# O endereço público de resultados continua .html (igual ao de antes e ao sitemap)
+RewriteRule ^resultados\.html$ resultados.php [L]
+</IfModule>
