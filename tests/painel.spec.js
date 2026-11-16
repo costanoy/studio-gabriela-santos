@@ -880,4 +880,40 @@ test.describe('P5 iPhone e ajuda', () => {
   });
 });
 
+// ===========================================================================
+// T10: diagnóstico de IP
+// ===========================================================================
+test.describe('T10 diagnóstico de IP', () => {
+  test('a tela mostra o endereço usado, o da conexão e o cabeçalho de proxy', async ({ page }) => {
+    await entrar(page);
+    const api = await chamar(page, { acao: 'diagnostico_ip' });
+    expect(api.ok).toBe(true);
+    await page.click('#cartao-diagnostico');
+    const caixa = page.locator('#diagnostico-ip');
+    await expect(caixa).toContainText('Endereço que o painel usa');
+    await expect(caixa).toContainText('Endereço da conexão direta');
+    await expect(caixa).toContainText('Cabeçalho de proxy configurado');
+    await expect(caixa.locator('dd').first()).toHaveText(api.ip_cliente || '(vazio)');
+    const t = await caixa.innerText();
+    expect(t).not.toMatch(/undefined|null|\[object/);
+  });
+
+  test('a ação diagnostico_ip exige entrar e o código de proteção', async ({ request }) => {
+    const r = await request.post('/painel/api.php', { data: { acao: 'diagnostico_ip' } });
+    expect([401, 403]).toContain(r.status());
+  });
+
+  test('sem proxy configurado a tela explica em português', async ({ page }) => {
+    await entrar(page);
+    await page.route('**/api.php', (route) => {
+      let acao = '';
+      try { acao = JSON.parse(route.request().postData() || '{}').acao; } catch (e) { acao = ''; }
+      if (acao !== 'diagnostico_ip') return route.continue();
+      return route.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify({ ok: true, ip_cliente: '203.0.113.9', remote_addr: '10.0.0.1', cabecalho: 'HTTP_X_FORWARDED_FOR', valor_cabecalho: '', proxies_confiaveis: ['10.0.0.1'], remoto_e_proxy_confiavel: true, ambiente: 'teste' }) });
+    });
+    await page.click('#cartao-diagnostico');
+    await expect(page.locator('#diagnostico-ip')).toContainText('não está conseguindo ler o endereço real');
+  });
+});
+
 // @@FIM

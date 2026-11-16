@@ -1373,6 +1373,46 @@
   CARTOES.push({ id: 'cartao-ajuda', icone: '❓', titulo: 'Ajuda', texto: 'Passo a passo para usar o painel', href: 'ajuda.php' });
   CARTOES.push({ id: 'cartao-lixeira', icone: '🗑️', titulo: 'Lixeira', texto: 'Trazer de volta fotos e vídeos', ir: function () { ir('lixeira'); } });
 
+  // ---------------------------------------------------------------------------
+  // Diagnóstico de IP (T10): para o Vinicius conferir de onde o painel enxerga o acesso
+  // ---------------------------------------------------------------------------
+  TELAS.diagnostico = function (raiz) {
+    raiz.appendChild(topo('Diagnóstico de acesso', 'home'));
+    var corpo = h('main', { id: 'conteudo-tela' });
+    corpo.appendChild(h('p', { class: 'dica', text: 'Esta tela é para o Vinicius. Ela mostra qual endereço o painel usa para limitar as tentativas de senha.' }));
+    var caixa = h('div', { id: 'diagnostico-ip' }, h('p', { class: 'carregando', text: 'Carregando…' }));
+    corpo.appendChild(caixa);
+    raiz.appendChild(corpo);
+    api('diagnostico_ip').then(function (r) {
+      limpar(caixa);
+      if (!r.ok) { caixa.appendChild(alerta(mensagemErro(r))); return; }
+      var usaCab = !!r.cabecalho;
+      var certo = usaCab ? (r.remoto_e_proxy_confiavel && !!r.valor_cabecalho) : true;
+      var resumo = !usaCab
+        ? 'O painel usa o endereço direto da conexão. Se o site fica atrás de uma proteção (CDN), todos podem parecer ter o mesmo endereço.'
+        : certo
+          ? 'Tudo certo: o painel enxerga o endereço real de quem acessa.'
+          : 'Atenção: o painel não está conseguindo ler o endereço real. Fale com o Vinicius antes de publicar.';
+      caixa.appendChild(alerta(resumo, certo ? 'ok' : null));
+      var linhas = [
+        ['Endereço que o painel usa', r.ip_cliente || '(vazio)'],
+        ['Endereço da conexão direta', r.remote_addr || '(vazio)'],
+        ['Cabeçalho de proxy configurado', r.cabecalho || 'nenhum'],
+        ['Valor recebido nesse cabeçalho', usaCab ? (r.valor_cabecalho || '(vazio)') : '—'],
+        ['A conexão direta é um proxy confiável?', r.remoto_e_proxy_confiavel ? 'Sim' : 'Não'],
+        ['Proxies confiáveis', r.proxies_confiaveis && r.proxies_confiaveis.length ? r.proxies_confiaveis.join(', ') : 'nenhum'],
+        ['Ambiente', r.ambiente || '—']
+      ];
+      var lista = h('dl', { class: 'diagnostico' });
+      linhas.forEach(function (l) {
+        lista.appendChild(h('dt', { text: l[0] }));
+        lista.appendChild(h('dd', { text: l[1] }));
+      });
+      caixa.appendChild(lista);
+    });
+  };
+  CARTOES.push({ id: 'cartao-diagnostico', icone: '🔧', titulo: 'Diagnóstico', texto: 'Para o Vinicius: confere o endereço de acesso', ir: function () { ir('diagnostico'); } });
+
   /*@@TELAS*/
 
   // ---------------------------------------------------------------------------

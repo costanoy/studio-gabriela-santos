@@ -50,6 +50,9 @@ p { margin: 0 0 12px; }
 .botao[disabled] { opacity: .5; cursor: not-allowed; }
 .botao-bloco { display: flex; width: 100%; }
 a.botao { text-decoration: none; }
+.diagnostico { margin: 12px 0 0; }
+.diagnostico dt { font-weight: 700; margin: 12px 0 2px; }
+.diagnostico dd { margin: 0; font-size: 17px; overflow-wrap: anywhere; }
 .ajuda-secao { margin: 0 0 20px; }
 .ajuda-passos { margin: 0; padding-left: 26px; font-size: 17px; line-height: 1.5; }
 .ajuda-passos li { margin: 0 0 8px; }
