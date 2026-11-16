@@ -726,4 +726,61 @@ test.describe('L14 conflito e rascunho', () => {
   });
 });
 
+// ===========================================================================
+// P4: mensagens de erro em português claro
+// ===========================================================================
+const TECNICO = /\b(csrf|json|http|https|api|php|undefined|null|exception|status|timeout|fetch|token|[1-5]\d\d)\b|erro \d|error/i;
+
+test.describe('P4 mensagens', () => {
+  const casos = [
+    { nome: 'rede', resposta: null, texto: 'A internet caiu. Nada foi mudado no site.' },
+    { nome: 'servidor', resposta: { status: 500, corpo: { ok: false, erro: 'servidor' } }, texto: 'Não consegui salvar. O site continua como estava.' },
+    { nome: 'pedido', resposta: { status: 400, corpo: { ok: false, erro: 'pedido' } }, texto: 'Não consegui entender o pedido.' },
+    { nome: 'metodo', resposta: { status: 405, corpo: { ok: false, erro: 'metodo' } }, texto: 'Não consegui entender o pedido.' },
+    { nome: 'nao_encontrada', resposta: { status: 404, corpo: { ok: false, erro: 'nao_encontrada' } }, texto: 'Essa versão não existe mais.' },
+    { nome: 'invalido', resposta: { status: 422, corpo: { ok: false, erro: 'invalido', detalhes: [] } }, texto: 'Alguns campos precisam de ajuste.' },
+    { nome: 'conflito', resposta: { status: 409, corpo: { ok: false, erro: 'conflito' } }, texto: 'O site foi alterado em outra tela.' },
+    { nome: 'sessao', resposta: { status: 401, corpo: { ok: false, erro: 'sessao' } }, texto: 'Por segurança, entre de novo. Suas mudanças foram guardadas.' },
+    { nome: 'csrf', resposta: { status: 403, corpo: { ok: false, erro: 'csrf' } }, texto: 'Por segurança, entre de novo.' },
+    { nome: 'desconhecido', resposta: { status: 418, corpo: { ok: false, erro: 'xyz_estranho' } }, texto: 'Não consegui salvar.' }
+  ];
+  for (const caso of casos) {
+    test('erro ' + caso.nome + ' mostra a frase certa e nenhum termo técnico', async ({ page }) => {
+      await entrar(page);
+      await page.click('#cartao-textos');
+      const det = await abrirGrupo(page, 'topo');
+      await det.locator('[data-caminho="home.hero.titulo"] input').fill('Teste de erro ' + caso.nome);
+      await page.route('**/api.php', (route) => {
+        let acao = '';
+        try { acao = JSON.parse(route.request().postData() || '{}').acao; } catch (e) { acao = ''; }
+        if (acao !== 'salvar') return route.continue();
+        if (!caso.resposta) return route.abort();
+        return route.fulfill({ status: caso.resposta.status, contentType: 'application/json', body: JSON.stringify(caso.resposta.corpo) });
+      });
+      await page.click('#salvar');
+      const aviso = page.locator('#aviso-topo');
+      await expect(aviso).toContainText(caso.texto);
+      const t = await aviso.innerText();
+      expect(t).not.toMatch(TECNICO);
+      if (caso.nome === 'rede' || caso.nome === 'servidor') await expect(page.locator('#tentar-de-novo')).toBeVisible();
+    });
+  }
+
+  test('lixeira que não consegue restaurar mostra a frase certa', async ({ page }) => {
+    await entrar(page);
+    await page.route('**/api.php', (route) => {
+      let acao = '';
+      try { acao = JSON.parse(route.request().postData() || '{}').acao; } catch (e) { acao = ''; }
+      if (acao === 'lixeira') return route.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify({ ok: true, itens: [{ id: 'abc', nome: 'foto.jpg', data: '2026-01-01T10:00:00+00:00', tamanho: 2048 }] }) });
+      if (acao === 'lixeira_restaurar') return route.fulfill({ status: 409, contentType: 'application/json', body: JSON.stringify({ ok: false, erro: 'nao_restaurou' }) });
+      return route.continue();
+    });
+    await page.click('#cartao-lixeira');
+    await page.getByRole('button', { name: /Restaurar/ }).click();
+    const t = await page.locator('.toast').innerText();
+    expect(t).toContain('Não foi possível trazer de volta');
+    expect(t).not.toMatch(TECNICO);
+  });
+});
+
 // @@FIM

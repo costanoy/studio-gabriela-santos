@@ -92,6 +92,7 @@
     conflito: 'O site foi alterado em outra tela. Carregue a versão nova antes de continuar.',
     invalido: 'Alguns campos precisam de ajuste. Confira os avisos em vermelho.',
     pedido: 'Não consegui entender o pedido. Atualize a página e tente de novo.',
+    metodo: 'Não consegui entender o pedido. Atualize a página e tente de novo.',
     nao_encontrada: 'Essa versão não existe mais.',
     nao_restaurou: 'Não foi possível trazer de volta. Já existe um arquivo com esse nome.',
     sem_midia: 'Envio de fotos indisponível no momento'
@@ -358,7 +359,7 @@
         return r;
       }
       if (r.status === 422) {
-        var soltos = mostrarErros(r.detalhes);
+        var soltos = mostrarErros(r.detalhes || []);
         avisoTopo(soltos.length ? soltos.join(' ') : MSG.invalido);
         return r;
       }
@@ -382,7 +383,10 @@
         } } }));
         return r;
       }
-      avisoTopo(mensagemErro(r));
+      var tentar = (r.erro === 'rede' || r.erro === 'servidor' || !MSG[r.erro])
+        ? h('button', { class: 'botao', type: 'button', id: 'tentar-de-novo', text: 'Tentar de novo', on: { click: function () { salvar(textoToast); } } })
+        : null;
+      avisoTopo(mensagemErro(r), tentar);
       return r;
     });
   }
