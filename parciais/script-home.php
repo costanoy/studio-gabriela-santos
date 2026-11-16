@@ -57,10 +57,11 @@ function goHomeMobile(e) {
 }
 function cartaoAtual(grid) {
   const cards = Array.from(grid.children).filter(function (c) { return c.offsetWidth > 0; });
-  const meio = grid.scrollLeft + grid.clientWidth / 2;
+  const centro = cards.length && getComputedStyle(cards[0]).scrollSnapAlign.indexOf('center') === 0;
+  const meio = grid.scrollLeft + (centro ? grid.clientWidth / 2 : 0);
   let idx = 0, melhor = Infinity;
   cards.forEach(function (c, i) {
-    const d = Math.abs(c.offsetLeft + c.offsetWidth / 2 - meio);
+    const d = Math.abs(c.offsetLeft + (centro ? c.offsetWidth / 2 : 0) - meio);
     if (d < melhor) { melhor = d; idx = i; }
   });
   return { cards: cards, idx: idx };
