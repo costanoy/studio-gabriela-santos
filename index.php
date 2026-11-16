@@ -37,7 +37,7 @@ parcial('estilo-home');
       <h1 style="font-family:'Marcellus', serif; font-size: clamp(40px, 5vw, 64px); line-height:1.08; color:#FBF3EE; margin: 0 0 24px;"><?= e($h['hero']['titulo']) ?></h1>
       <p style="font-size: 20px; line-height:1.6; color:#F3E4DA; margin: 0 0 36px; max-width: 480px;"><?= e($h['hero']['texto']) ?></p>
       <div style="display:flex; gap:16px; flex-wrap:wrap;">
-        <a href="<?= e($wa) ?>" target="_blank" rel="noopener" class="btn-fill btn-lift" style="text-decoration:none; background:#7D5843; color:#FBF3EE; padding:16px 32px; border-radius:10px; font-weight:700; font-size:16px; letter-spacing:0.02em; transition: background 0.2s ease, transform 0.2s ease;"><?= e($h['hero']['botao_principal']) ?></a>
+        <a href="<?= e($wa) ?>" target="_blank" rel="noopener" class="btn-claro btn-lift" style="text-decoration:none; background:#FBF3EE; color:#6B4A39; padding:16px 32px; border-radius:10px; font-weight:700; font-size:16px; letter-spacing:0.02em; transition: background 0.2s ease, transform 0.2s ease;"><?= e($h['hero']['botao_principal']) ?></a>
         <a href="#procedimentos" class="btn-outline btn-lift" style="text-decoration:none; background:transparent; border:1.5px solid #F3E4DA; color:#F3E4DA; padding:16px 32px; border-radius:10px; font-weight:700; font-size:16px; letter-spacing:0.02em; transition: background 0.2s ease, transform 0.2s ease;"><?= e($h['hero']['botao_secundario']) ?></a>
       </div>
     </div>
