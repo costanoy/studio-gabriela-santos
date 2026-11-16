@@ -77,10 +77,12 @@ parcial('estilo-home');
 <?php endforeach; ?>
       <p style="font-size:20px; font-weight:700; color:#996C55; margin:0; display:flex; align-items:center; gap:8px;"><?= e($h['sobre']['saiba_mais']) ?> <span id="saiba-arrow" style="display:inline-flex; align-items:center;">→</span></p>
     </div>
-    <div style="width:100%; position:relative; display:flex; justify-content:center;">
+    <div style="width:100%; display:flex; justify-content:center;">
+      <div style="position:relative; max-width:100%; display:flex;">
 <?php $vl = (int) ($h['sobre']['video']['largura'] ?? 0) ?: 576; $va = (int) ($h['sobre']['video']['altura'] ?? 0) ?: 1024; ?>
       <video id="apresentacao-video" src="<?= e(url_midia($h['sobre']['video']['arquivo'])) ?>" controls="" playsinline="" preload="metadata" poster="<?= e(url_midia($h['sobre']['video']['poster'])) ?>" style="max-width:100%; max-height:480px; width:auto; aspect-ratio: <?= $vl ?>/<?= $va ?>; object-fit:cover; border-radius:20px; display:block; background:#000;"></video>
-      <div onclick="toggleApresentacaoVideo()" style="position:absolute; top:0; left:0; right:0; bottom:44px; cursor:pointer;"></div>
+        <button type="button" class="video-play" onclick="tocarVideo(this)" aria-label="Reproduzir vídeo"><svg width="26" height="26" viewBox="0 0 24 24" fill="#FBF3EE" aria-hidden="true"><path d="M8 5.5v13a1 1 0 0 0 1.5.86l10.5-6.5a1 1 0 0 0 0-1.72L9.5 4.64A1 1 0 0 0 8 5.5z"></path></svg></button>
+      </div>
     </div>
   </div>
 

@@ -267,13 +267,14 @@ test.describe('video da home', () => {
   test('toca ao clicar no overlay e pausa ao clicar de novo', async ({ page }) => {
     await page.goto('/index.html');
     const v = page.locator('#apresentacao-video'); await v.scrollIntoViewIfNeeded();
-    const ov = page.locator('div[onclick="toggleApresentacaoVideo()"]');
+    const ov = page.locator('button.video-play');
     await ov.click();
     const played = await page.waitForFunction(() => { const e = document.getElementById('apresentacao-video'); return e.currentTime > 0.3 && !e.paused; }, null, { timeout: 15000 }).then(() => true).catch(() => false);
     const info = await v.evaluate((e) => ({ err: e.error && e.error.code, rs: e.readyState, ns: e.networkState, t: e.currentTime, w: e.videoWidth }));
     console.log('HOME play:', played, JSON.stringify(info));
     expect(played, JSON.stringify(info)).toBe(true);
-    await ov.click(); expect(await v.evaluate((e) => e.paused)).toBe(true);
+    await v.evaluate((e) => e.pause()); expect(await v.evaluate((e) => e.paused)).toBe(true);
+    await expect(ov).toBeVisible();
   });
 });
 
@@ -316,7 +317,7 @@ test.describe('resultados.html', () => {
       const st = await stats(page, await v.screenshot());
       console.log(`RES ${name} antes do play: media ${st.mean.toFixed(1)} desvio ${st.sd.toFixed(1)}`);
       expect(st.mean, 'tela preta antes do play').toBeGreaterThan(25); expect(st.sd).toBeGreaterThan(10);
-      await v.locator('xpath=following-sibling::div[@onclick][1]').click();
+      await v.locator('xpath=following-sibling::button[contains(@class,"video-play")][1]').click();
       const played = await page.waitForFunction((i) => { const e = document.querySelectorAll('video')[i]; return e.currentTime > 0.3 && !e.paused; }, idx, { timeout: 15000 }).then(() => true).catch(() => false);
       const info = await v.evaluate((e) => ({ err: e.error && e.error.code, rs: e.readyState, w: e.videoWidth }));
       console.log(`RES ${name} play:`, played, JSON.stringify(info));

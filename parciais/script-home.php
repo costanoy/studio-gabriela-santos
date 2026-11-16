@@ -1,9 +1,24 @@
 <?php defined('RAIZ') || exit; ?>
 <script>
-function toggleApresentacaoVideo() {
-  const v = document.getElementById('apresentacao-video');
-  if (v) { v.paused ? v.play() : v.pause(); }
+function tocarVideo(btn) {
+  const v = btn.parentElement.querySelector('video');
+  if (v) v.play();
 }
+function marcarVideo(v, tocando) {
+  const b = v.parentElement.querySelector('.video-play');
+  if (b) b.hidden = tocando;
+}
+document.addEventListener('play', function (e) {
+  const v = e.target;
+  if (!v || v.tagName !== 'VIDEO') return;
+  document.querySelectorAll('video').forEach(function (o) { if (o !== v && !o.paused) o.pause(); });
+  marcarVideo(v, true);
+}, true);
+['pause', 'ended'].forEach(function (nome) {
+  document.addEventListener(nome, function (e) {
+    if (e.target && e.target.tagName === 'VIDEO') marcarVideo(e.target, false);
+  }, true);
+});
 function goHome(e) {
   e.preventDefault();
   window.scrollTo({ top: 0, behavior: 'smooth' });

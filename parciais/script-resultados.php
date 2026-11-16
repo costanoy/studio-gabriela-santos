@@ -8,13 +8,25 @@ window.addEventListener('scroll', function () {
   else return;
   document.getElementById('site-header').classList.toggle('scrolled', __scrolled);
 }, { passive: true });
-function toggleVideo(overlay) {
-  const video = overlay.previousElementSibling && overlay.previousElementSibling.tagName === 'VIDEO'
-    ? overlay.previousElementSibling
-    : overlay.parentElement.querySelector('video');
-  const v = overlay.parentElement.querySelector('video');
-  if (v) { v.paused ? v.play() : v.pause(); }
+function tocarVideo(btn) {
+  const v = btn.parentElement.querySelector('video');
+  if (v) v.play();
 }
+function marcarVideo(v, tocando) {
+  const b = v.parentElement.querySelector('.video-play');
+  if (b) b.hidden = tocando;
+}
+document.addEventListener('play', function (e) {
+  const v = e.target;
+  if (!v || v.tagName !== 'VIDEO') return;
+  document.querySelectorAll('video').forEach(function (o) { if (o !== v && !o.paused) o.pause(); });
+  marcarVideo(v, true);
+}, true);
+['pause', 'ended'].forEach(function (nome) {
+  document.addEventListener(nome, function (e) {
+    if (e.target && e.target.tagName === 'VIDEO') marcarVideo(e.target, false);
+  }, true);
+});
 function baSlide(input) {
   const wrap = input.closest('div');
   const pct = input.value;
