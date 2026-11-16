@@ -35,3 +35,4 @@ publicar/
 painel-config*.php
 conteudo/midia/*
 !conteudo/midia/.htaccess
+.claude/worktrees/
