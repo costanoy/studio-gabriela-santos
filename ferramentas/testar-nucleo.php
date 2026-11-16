@@ -5,6 +5,8 @@ define('RAIZ', dirname(__DIR__));
 require_once RAIZ . '/nucleo/config.php';
 require_once RAIZ . '/nucleo/conteudo.php';
 require_once RAIZ . '/nucleo/render.php';
+require_once RAIZ . '/nucleo/seguranca.php';
+ob_start(); // sessões mandam cabeçalhos: nada sai antes do fim
 
 $ok = 0;
 $falhas = [];
@@ -117,6 +119,62 @@ config_definir(null);
 t(config()['dados_dir'] === '' || strpos(config()['dados_dir'], RAIZ) !== 0, 'padrão não coloca dados dentro do site');
 $cfg_php = (string) file_get_contents(RAIZ . '/nucleo/config.php');
 t(strpos($cfg_php, "dirname(RAIZ) . '/painel-config.php'") !== false, 'config de produção fica uma pasta acima do site');
+
+echo "\nT09 sessão do painel\n";
+$tmp = sys_get_temp_dir() . '/sgs-teste-' . bin2hex(random_bytes(4));
+mkdir($tmp, 0700, true);
+$senha_teste = bin2hex(random_bytes(12));
+$cfg_teste = ['senha_hash' => password_hash($senha_teste, PASSWORD_DEFAULT), 'dados_dir' => $tmp, 'cookie_secure' => false, 'sessao_minutos' => 120];
+config_definir($cfg_teste);
+$GLOBALS['__nucleo_teste'] = ['sem_exit' => true, 'agora' => 1000000];
+
+t(config()['sessao_minutos'] === 120, 'sessão expira com 120 minutos sem uso');
+sessao_iniciar();
+$cp = session_get_cookie_params();
+t($cp['httponly'] === true, 'cookie HttpOnly');
+t($cp['samesite'] === 'Strict', 'cookie SameSite=Strict');
+t($cp['path'] === '/' && $cp['lifetime'] === 0, 'cookie de sessão (some ao fechar o navegador)');
+t(ini_get('session.use_strict_mode') === '1', 'use_strict_mode ligado');
+t(str_replace('\\', '/', session_save_path()) === str_replace('\\', '/', $tmp) . '/sessoes', 'sessões guardadas em dados_dir/sessoes');
+t(session_name() === 'sgs', 'nome do cookie sem __Host- quando não é https (prévia)');
+t(sessao_logada() === false, 'sem login, não está logada');
+
+$id_antes = session_id();
+$r = sessao_entrar('senha-errada');
+t($r['ok'] === false && $r['erro'] === 'senha' && !sessao_logada(), 'senha errada não entra');
+$r = sessao_entrar($senha_teste);
+t($r === ['ok' => true] && sessao_logada(), 'senha certa entra');
+t(session_id() !== $id_antes, 'ID de sessão novo no login');
+$id_logado = session_id();
+session_write_close();
+
+// 119 min depois ainda vale, 121 min depois acabou
+$GLOBALS['__nucleo_teste']['agora'] = 1000000 + 119 * 60;
+session_id($id_logado);
+sessao_iniciar();
+t(sessao_logada(), 'com 119 min sem uso ainda está logada');
+session_write_close();
+$GLOBALS['__nucleo_teste']['agora'] = 1000000 + 119 * 60 + 121 * 60;
+session_id($id_logado);
+sessao_iniciar();
+t(!sessao_logada(), 'com 121 min sem uso a sessão acabou');
+t(session_id() !== $id_logado, 'a sessão vencida troca de ID');
+try {
+    exigir_login_api();
+    t(false, 'exigir_login_api responde 401 sem sessão');
+} catch (RespostaJson $x) {
+    t($x->status === 401 && ($x->dados['erro'] ?? '') === 'sessao_expirada', 'exigir_login_api responde 401 com erro sessao_expirada');
+}
+sessao_entrar($senha_teste);
+sessao_sair();
+t(session_status() === PHP_SESSION_NONE, 'sair encerra a sessão');
+$cab = implode("\n", cabecalhos_painel_lista());
+t(strpos($cab, 'X-Robots-Tag: noindex') !== false && strpos($cab, 'Cache-Control: no-store') !== false, '/painel/ com noindex e no-store');
+config_definir(array_merge($cfg_teste, ['cookie_secure' => true]));
+t(sessao_nome() === '__Host-sgs', 'com https o cookie usa o prefixo __Host- e Secure');
+config_definir(['senha_hash' => '', 'dados_dir' => $tmp]);
+t(sessao_entrar('qualquer')['ok'] === false, 'sem senha configurada ninguém entra');
+config_definir(null);
 
 echo "\n";
 if ($falhas) {

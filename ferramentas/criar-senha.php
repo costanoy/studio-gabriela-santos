@@ -50,7 +50,7 @@ if ($local) {
             'cookie_secure' => false,
             'ip_cabecalho' => null,
             'proxies_confiaveis' => [],
-            'sessao_minutos' => 30,
+            'sessao_minutos' => 120,
         ], true) . ";\n";
     gravar_seguro($raiz . '/.local/painel-config.php', $conteudo);
     gravar_seguro($raiz . '/.local/senha-teste.txt', $senha . "\n");
@@ -75,7 +75,7 @@ $conteudo = "<?php\n// Gerado por ferramentas/criar-senha.php. Suba para a pasta
     . "    'cookie_secure' => true,\n"
     . "    'ip_cabecalho' => null,          // na Hostinger com CDN: 'HTTP_X_FORWARDED_FOR' (veja o diagnóstico do painel)\n"
     . "    'proxies_confiaveis' => [],      // IPs ou faixas (CIDR) do proxy\n"
-    . "    'sessao_minutos' => 30,\n"
+    . "    'sessao_minutos' => 120,\n"
     . "];\n";
 gravar_seguro($raiz . '/publicar/painel-config.php', $conteudo);
 echo "Pronto. Arquivo em publicar/painel-config.php (não vai para o Git).\n";

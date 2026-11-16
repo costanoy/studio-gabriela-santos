@@ -32,7 +32,7 @@ function config(): array
         'cookie_secure' => true,
         'ip_cabecalho' => null,
         'proxies_confiaveis' => [],
-        'sessao_minutos' => 30,
+        'sessao_minutos' => 120,
     ];
 
     if (array_key_exists('__config_teste', $GLOBALS) && $GLOBALS['__config_teste'] !== null) {
