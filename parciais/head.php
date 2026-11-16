@@ -1,0 +1,47 @@
+<?php defined('RAIZ') || exit;
+/** Cabeçalho do documento até os preloads de fonte. Variáveis: $c (conteúdo), $pagina ('home' ou 'resultados'). */
+$home = $pagina === 'home';
+$seo = $c['seo'];
+$base = url_base($c);
+$url = $base . ($home ? '/' : '/resultados.html');
+$titulo = $home ? $seo['titulo'] : $seo['titulo_resultados'];
+$descricao = $home ? $seo['descricao'] : $seo['descricao_resultados'];
+$og_titulo = $home ? $seo['og_titulo'] : $seo['og_titulo_resultados'];
+$og_descricao = $home ? $seo['og_descricao'] : $seo['og_descricao_resultados'];
+$og_imagem = $base . '/' . url_midia($seo['og_imagem']);
+?>
+<!DOCTYPE html>
+<html lang="pt-BR"><head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title><?= e($titulo) ?></title>
+<meta name="description" content="<?= e($descricao) ?>">
+<meta name="robots" content="index, follow, max-image-preview:large">
+<meta name="theme-color" content="#996C55">
+<link rel="canonical" href="<?= e($url) ?>">
+<link rel="icon" type="image/png" href="assets/favicon.png">
+<link rel="apple-touch-icon" href="assets/favicon.png">
+<meta property="og:type" content="website">
+<meta property="og:site_name" content="Studio Gabriela Santos">
+<meta property="og:url" content="<?= e($url) ?>">
+<meta property="og:title" content="<?= e($og_titulo) ?>">
+<meta property="og:description" content="<?= e($og_descricao) ?>">
+<meta property="og:image" content="<?= e($og_imagem) ?>">
+<meta property="og:image:width" content="1200">
+<meta property="og:image:height" content="630">
+<?php if ($home): ?>
+<meta property="og:image:alt" content="<?= e($seo['og_imagem_alt']) ?>">
+<?php endif; ?>
+<meta property="og:locale" content="pt_BR">
+<meta name="twitter:card" content="summary_large_image">
+<?php if ($home): ?>
+<meta name="twitter:title" content="<?= e($og_titulo) ?>">
+<meta name="twitter:description" content="<?= e($og_descricao) ?>">
+<?php endif; ?>
+<meta name="twitter:image" content="<?= e($og_imagem) ?>">
+<script type="application/ld+json">
+<?= jsonld($home ? jsonld_negocio($c) : jsonld_breadcrumb()) ?>
+
+</script>
+<link rel="preload" href="assets/fonts/4c2bca52.woff2" as="font" type="font/woff2" crossorigin>
+<link rel="preload" href="assets/fonts/23e9ba1c.woff2" as="font" type="font/woff2" crossorigin>

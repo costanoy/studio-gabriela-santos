@@ -134,8 +134,9 @@ test('T03 logo-gs e hero-bg da home pesam pouco (<= 40 KB cada) e logo-gs nao e 
 // =====================================================================
 // T04 - arquivos sem uso
 // =====================================================================
-test('T04 todo arquivo de assets/ e usado por index.html ou resultados.html', async () => {
-  const html = ['index.html', 'resultados.html'].map((f) => fs.readFileSync(path.join(ROOT, f), 'utf8')).join('\n');
+test('T04 todo arquivo de assets/ e usado pelo JSON, pelas paginas ou pelos parciais', async () => {
+  const fontes = ['dados/site.padrao.json', 'index.php', 'resultados.php', ...fs.readdirSync(path.join(ROOT, 'parciais')).map((n) => 'parciais/' + n)];
+  const html = fontes.map((f) => fs.readFileSync(path.join(ROOT, f), 'utf8')).join('\n');
   const walk = (d) => fs.readdirSync(d, { withFileTypes: true }).flatMap((e) => e.isDirectory() ? walk(path.join(d, e.name)) : [path.join(d, e.name)]);
   const sem = walk(path.join(ROOT, 'assets')).map((f) => path.relative(ROOT, f).replace(/\\/g, '/')).filter((rel) => !html.includes(rel));
   console.log('T04 sem uso:', JSON.stringify(sem));

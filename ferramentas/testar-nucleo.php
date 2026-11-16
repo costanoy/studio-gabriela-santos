@@ -1,0 +1,80 @@
+<?php
+// Testes do núcleo PHP (sem navegador). Uso: php ferramentas/testar-nucleo.php
+// Cada bloco é de um item do Lote 1. Sai com código 1 se algo falhar.
+define('RAIZ', dirname(__DIR__));
+require_once RAIZ . '/nucleo/config.php';
+require_once RAIZ . '/nucleo/conteudo.php';
+require_once RAIZ . '/nucleo/render.php';
+
+$ok = 0;
+$falhas = [];
+function t(bool $cond, string $nome): void
+{
+    global $ok, $falhas;
+    if ($cond) {
+        $ok++;
+        echo "  ok   $nome\n";
+    } else {
+        $falhas[] = $nome;
+        echo "  FALHA $nome\n";
+    }
+}
+
+function renderizar(string $pagina, array $c): string
+{
+    ob_start();
+    parcial('head', ['c' => $c, 'pagina' => $pagina]);
+    parcial('cabecalho', ['c' => $c, 'pagina' => $pagina]);
+    parcial('rodape', ['c' => $c, 'pagina' => $pagina]);
+    return (string) ob_get_clean();
+}
+
+echo "L15 mesclagem\n";
+$padrao = conteudo_padrao();
+t(($padrao['versao_esquema'] ?? 0) === 1, 'padrão tem versao_esquema 1');
+$m = conteudo_mesclar(['a' => ['x' => 1, 'y' => 2], 'l' => [1, 2, 3], 'so_padrao' => 'p'], ['a' => ['x' => 9], 'l' => [7]]);
+t($m['a'] === ['x' => 9, 'y' => 2], 'objetos mesclam por chave');
+t($m['l'] === [7], 'listas do editado substituem inteiras');
+t($m['so_padrao'] === 'p', 'chave ausente no editado vem do padrão');
+
+echo "\nL15 escape\n";
+t(e('<b>"a" & \'b\'</b>') === '&lt;b&gt;&quot;a&quot; &amp; &#039;b&#039;&lt;/b&gt;', 'e() escapa < > " & \'');
+t(e(null) === '', 'e(null) devolve vazio');
+$ld = jsonld(['x' => '</script><script>alert(1)</script>']);
+t(stripos($ld, '</script') === false, 'jsonld não deixa </script> passar');
+t(json_decode($ld, true)['x'] === '</script><script>alert(1)</script>', 'jsonld continua JSON válido');
+
+$c = $padrao;
+$c['contato']['endereco_curto'] = '<b>Rua "X" & Y</b>';
+$html = renderizar('home', $c);
+t(strpos($html, '<b>Rua') === false && strpos($html, '&lt;b&gt;Rua') !== false, 'texto do JSON sai escapado no rodapé');
+
+echo "\nL15 resultados\n";
+$h = resultados_home($padrao);
+t(count($h) === 5, 'home mostra 5 comparações');
+t(count(array_filter($h, fn($i) => $i['tipo'] === 'comparacao')) === 5, 'home só tem comparações');
+$g = resultados_por_categoria($padrao);
+t(count($g) === 5, 'resultados tem 5 categorias');
+t(array_sum(array_map(fn($x) => count($x['itens']), $g)) === 11, 'resultados tem 11 itens');
+t(array_column($g, 'colunas') === [3, 2, 2, 2, 2] || array_column($g, 'colunas') === [3, 2, 2, 2, 2], 'colunas = min(itens, 3)');
+
+$c2 = $padrao;
+foreach ($c2['resultados']['itens'] as &$i) {
+    if ($i['categoria'] === $c2['resultados']['categorias'][1]['id']) {
+        $i['em_resultados'] = false;
+    }
+}
+unset($i);
+t(count(resultados_por_categoria($c2)) === 4, 'categoria sem itens visíveis some');
+
+$c3 = $padrao;
+$c3['resultados']['itens'][0]['na_home'] = false;
+t(count(resultados_home($c3)) === 4, 'item com na_home falso sai da home');
+
+echo "\n";
+if ($falhas) {
+    echo count($falhas) . " falha(s), $ok ok.\n";
+    exit(1);
+}
+echo "Tudo certo: $ok verificações.\n";
+exit(0);

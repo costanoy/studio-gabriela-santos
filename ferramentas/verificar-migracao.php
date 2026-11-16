@@ -82,8 +82,13 @@ function normalizar(string $html): string
     $html = preg_replace('/\s+/', ' ', $html);
     $html = preg_replace('/>\s+</', '><', $html);
     $html = preg_replace('/;\s+/', ';', $html);
-    $html = preg_replace('/\s*;\s*"/', ';"', $html);
+    $html = preg_replace('/\s*;\s*"/', '"', $html);
     $html = preg_replace('/:\s+/', ':', $html);
+    // JSON-LD: só o conteúdo importa, não os espaços entre as chaves
+    $html = preg_replace_callback('#(<script type="application/ld\+json">)\s*(.*?)\s*(</script>)#s', static function ($m) {
+        $j = json_decode($m[2], true);
+        return $m[1] . ($j === null ? $m[2] : json_encode($j, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES)) . $m[3];
+    }, $html);
     $html = str_replace(['=""', ' >'], ['', '>'], $html);
     return trim($html);
 }
@@ -157,7 +162,6 @@ if (is_file($raiz . '/nucleo/render.php')) {
         }
         conferir($validos, "$nome.php: todos os ld+json passam em JSON.parse (" . count($ld[1]) . ')');
 
-        $ids_antigos = [];
         preg_match_all('/\sid="([^"]+)"/', $antigo, $a);
         preg_match_all('/\sid="([^"]+)"/', $novo, $b);
         conferir(array_values(array_unique($a[1])) === array_values(array_unique($b[1])), "$nome.php: mesmos ids na mesma ordem");
@@ -165,6 +169,18 @@ if (is_file($raiz . '/nucleo/render.php')) {
         $oc_novo = preg_match_all('/onclick="([^"]*)"/', $novo, $on) ? $on[1] : [];
         conferir($oc_antigo === $oc_novo, "$nome.php: mesmos onclick (" . count($oc_novo) . ')');
 
+        // Única diferença aceita na renderização: "Corrente Fortalecedora" tem 2 itens e
+        // passa de 3 para 2 colunas (colunas = min(itens, 3), regra do plano).
+        if ($nome === 'resultados') {
+            $pos = strrpos($antigo, 'repeat(3, minmax(240px, 340px))');
+            if ($pos !== false) {
+                $antigo = substr_replace($antigo, 'repeat(2, minmax(240px, 340px))', $pos, strlen('repeat(3, minmax(240px, 340px))'));
+            }
+        }
+        // Depois do L07 o rodapé usa o horário único do JSON ("das 8h às 17h").
+        if (strpos((string) @file_get_contents($raiz . '/parciais/rodape.php'), "contato']['horario'") !== false) {
+            $antigo = str_replace('Segunda à sexta, 8h às 17h', $c['contato']['horario'], $antigo);
+        }
         $iguais = normalizar($novo) === normalizar($antigo);
         echo '  info ' . $nome . '.php: HTML normalizado ' . ($iguais ? 'idêntico ao antigo' : 'tem diferenças (veja abaixo)') . "\n";
         if (!$iguais && getenv('DIFERENCAS')) {
@@ -175,12 +191,10 @@ if (is_file($raiz . '/nucleo/render.php')) {
         $GLOBALS['igual_' . $nome] = $iguais;
     }
 
-    // Diferenças aceitas, uma a uma. Tudo o mais deve ser idêntico.
-    $esperadas = [
-        'index' => ['horario' => 'Segunda à sexta, 8h às 17h'],
-    ];
-    $dif = $GLOBALS['igual_index'] && $GLOBALS['igual_resultados'];
-    conferir($dif || getenv('DIFERENCAS_OK') !== false || true, 'comparação normalizada executada (diferenças aceitas: ver abaixo)');
+    // Tudo o mais deve ser idêntico ao HTML antigo. Diferenças aceitas (aplicadas no antigo acima):
+    // Corrente Fortalecedora com 2 colunas e, depois do L07, o horário único do rodapé.
+    conferir($GLOBALS['igual_index'], 'index.php: HTML idêntico ao antigo (normalizado)');
+    conferir($GLOBALS['igual_resultados'], 'resultados.php: HTML idêntico ao antigo (normalizado)');
 
     // L07: telefone, horário e endereço em um só lugar
     $home = $paginas['index'];
@@ -209,9 +223,6 @@ if (is_file($raiz . '/nucleo/render.php')) {
         conferir($unificado, 'L07: horário igual em todas as ocorrências');
         $tel = preg_match_all('/\(62\) 98414-1116/', $home . $paginas['resultados']);
         conferir($tel >= 1, 'telefone exibido vem de contato.whatsapp_exibicao');
-        foreach (['parciais', '.'] as $pasta) {
-            // sem número de telefone escrito à mão nos parciais
-        }
         $arqs = array_merge(glob($raiz . '/parciais/*.php'), [$raiz . '/index.php', $raiz . '/resultados.php']);
         $literais = [];
         foreach ($arqs as $a) {
