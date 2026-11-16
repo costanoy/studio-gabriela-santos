@@ -51,18 +51,18 @@
             "alt": "Studio Gabriela Santos"
         },
         "logo_icone": {
-            "arquivo": "assets/logo-gs.png",
-            "largura": 1920,
-            "altura": 1080,
+            "arquivo": "assets/logo-gs.webp",
+            "largura": 384,
+            "altura": 216,
             "alt": "Studio Gabriela Santos"
         }
     },
     "home": {
         "hero": {
             "imagem": {
-                "arquivo": "assets/hero-bg.png",
-                "largura": 1920,
-                "altura": 1080
+                "arquivo": "assets/hero-bg.webp",
+                "largura": 1600,
+                "altura": 900
             },
             "titulo": "Studio Gabriela Santos",
             "texto": "Cuidado, técnica e resultado. Procedimentos corporais e faciais pensados para realçar sua beleza natural.",
