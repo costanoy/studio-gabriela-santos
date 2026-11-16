@@ -200,10 +200,12 @@
 </style>
 <style>
   body { margin: 0; background: #FBF3EE; }
-  a { color: #996C55; }
-  a:hover { color: #7d5843; }
+  a { color: #7D5843; }
+  a:hover { color: #6B4A39; }
   video { display:block; }
-  header a, header button { -webkit-tap-highlight-color: transparent; outline: none; }
+  header a, header button { -webkit-tap-highlight-color: transparent; }
+  :focus-visible { outline: 2px solid #7D5843; outline-offset: 3px; }
+  header :focus-visible, footer :focus-visible, #mobile-nav-wrap :focus-visible, #procedimentos :focus-visible, #home :focus-visible { outline-color: #F3E4DA; }
   @media (max-width: 900px) {
     #rc-back-link { left: 5%; right:auto !important; }
     .rc-grid { grid-template-columns: 1fr !important; justify-content: stretch !important; }
@@ -212,7 +214,13 @@
     #footer-grid > div:first-child { display: flex; justify-content: center; }
     #footer-grid > div:first-child img { height: 130px !important; }
     #footer-menus, #footer-cursos { display: none !important; }
+    footer a { min-height: 44px; box-sizing: border-box; display: flex; align-items: center; }
+    #rc-back-link { min-height: 44px; min-width: 44px; }
   }
+  .ba-alca { position:absolute; top:50%; left:50%; transform:translate(-50%,-50%); width:40px; height:40px; border-radius:50%; background:#FBF3EE; display:flex; align-items:center; justify-content:center; box-shadow:0 2px 10px rgba(58,42,34,0.35); }
+  .video-play { position:absolute; top:50%; left:50%; transform:translate(-50%,-50%); width:64px; height:64px; border-radius:50%; border:none; padding:0 0 0 4px; box-sizing:border-box; background:rgba(58,42,34,0.62); display:flex; align-items:center; justify-content:center; cursor:pointer; z-index:2; box-shadow:0 2px 14px rgba(0,0,0,0.3); }
+  .video-play[hidden] { display:none; }
+  .video-play:hover { background:rgba(58,42,34,0.8); }
   #site-header { transition: padding 0.25s ease; }
   #logo-full, #logo-gs { transition: height 0.25s ease, width 0.25s ease, opacity 0.2s ease; }
   #site-header.scrolled { padding: 8px 5% !important; }

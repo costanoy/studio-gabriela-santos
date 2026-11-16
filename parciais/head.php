@@ -39,6 +39,7 @@ $og_imagem = $base . '/' . url_midia($seo['og_imagem']);
 <meta name="twitter:description" content="<?= e($og_descricao) ?>">
 <?php endif; ?>
 <meta name="twitter:image" content="<?= e($og_imagem) ?>">
+<script>document.documentElement.classList.add('js');</script>
 <script type="application/ld+json">
 <?= jsonld($home ? jsonld_negocio($c) : jsonld_breadcrumb()) ?>
 

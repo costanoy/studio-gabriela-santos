@@ -25,6 +25,7 @@ parcial('estilo-home');
 </head>
 <body>
 <?php parcial('cabecalho', $vars); ?>
+<main id="conteudo">
 
   <section id="home" style="position:relative; min-height: 92vh; display:flex; align-items:center; padding: 0 5%; box-sizing:border-box;">
     <div style="position:absolute; inset:0; z-index:0; overflow:hidden; background:#996C55;">
@@ -36,7 +37,7 @@ parcial('estilo-home');
       <h1 style="font-family:'Marcellus', serif; font-size: clamp(40px, 5vw, 64px); line-height:1.08; color:#FBF3EE; margin: 0 0 24px;"><?= e($h['hero']['titulo']) ?></h1>
       <p style="font-size: 20px; line-height:1.6; color:#F3E4DA; margin: 0 0 36px; max-width: 480px;"><?= e($h['hero']['texto']) ?></p>
       <div style="display:flex; gap:16px; flex-wrap:wrap;">
-        <a href="<?= e($wa) ?>" target="_blank" rel="noopener" class="btn-fill btn-lift" style="text-decoration:none; background:#996C55; color:#FBF3EE; padding:16px 32px; border-radius:10px; font-weight:700; font-size:16px; letter-spacing:0.02em; transition: background 0.2s ease, transform 0.2s ease;"><?= e($h['hero']['botao_principal']) ?></a>
+        <a href="<?= e($wa) ?>" target="_blank" rel="noopener" class="btn-fill btn-lift" style="text-decoration:none; background:#7D5843; color:#FBF3EE; padding:16px 32px; border-radius:10px; font-weight:700; font-size:16px; letter-spacing:0.02em; transition: background 0.2s ease, transform 0.2s ease;"><?= e($h['hero']['botao_principal']) ?></a>
         <a href="#procedimentos" class="btn-outline btn-lift" style="text-decoration:none; background:transparent; border:1.5px solid #F3E4DA; color:#F3E4DA; padding:16px 32px; border-radius:10px; font-weight:700; font-size:16px; letter-spacing:0.02em; transition: background 0.2s ease, transform 0.2s ease;"><?= e($h['hero']['botao_secundario']) ?></a>
       </div>
     </div>
@@ -54,7 +55,7 @@ parcial('estilo-home');
   <section id="sobre" class="reveal" style="padding: 110px 5% 40px; display:grid; grid-template-columns: 0.85fr 1fr; gap: 72px; align-items:stretch; max-width:1280px; margin:0 auto; box-sizing:border-box;">
     <img id="sobre-foto" src="<?= e(url_midia($h['sobre']['foto']['arquivo'])) ?>" alt="<?= e($h['sobre']['foto']['alt']) ?>" style="width:100%; aspect-ratio: 4/5; object-fit:cover; border-radius:20px;">
     <div style="display:flex; flex-direction:column; height:100%;">
-      <p style="font-size:13px; letter-spacing:0.15em; text-transform:uppercase; color:#996C55; font-weight:700; margin:0 0 14px;"><?= e($h['sobre']['rotulo']) ?></p>
+      <p style="font-size:13px; letter-spacing:0.15em; text-transform:uppercase; color:#7D5843; font-weight:700; margin:0 0 14px;"><?= e($h['sobre']['rotulo']) ?></p>
       <h2 style="font-family:'Marcellus', serif; font-size: clamp(30px, 3vw, 42px); margin: 0 0 24px; color:#3A2A22;"><?= e($h['sobre']['titulo']) ?></h2>
 <?php foreach ($h['sobre']['paragrafos'] as $p): ?>
       <p style="font-size:17px; line-height:1.8; color:#5C4A40; margin: 0 0 18px;"><?= e($p) ?></p>
@@ -62,7 +63,7 @@ parcial('estilo-home');
       <div id="sobre-stats" style="display:flex; gap:40px; flex-wrap:wrap; margin-top:auto;">
 <?php foreach ($h['sobre']['numeros'] as $n): ?>
         <div>
-          <p style="font-family:'Marcellus', serif; font-size:30px; margin:0; color:#996C55;"><?= e($n['valor']) ?></p>
+          <p style="font-family:'Marcellus', serif; font-size:30px; margin:0; color:#7D5843;"><?= e($n['valor']) ?></p>
           <p style="font-size:14px; margin:6px 0 0; color:#5C4A40;"><?= e($n['legenda']) ?></p>
         </div>
 <?php endforeach; ?>
@@ -75,22 +76,25 @@ parcial('estilo-home');
 <?php $vp = $h['sobre']['video_paragrafos']; foreach ($vp as $i => $p): ?>
       <p style="font-size:17px; line-height:1.8; color:#5C4A40; margin: 0 0 <?= $i === count($vp) - 1 ? '24' : '18' ?>px;"><?= e($p) ?></p>
 <?php endforeach; ?>
-      <p style="font-size:20px; font-weight:700; color:#996C55; margin:0; display:flex; align-items:center; gap:8px;"><?= e($h['sobre']['saiba_mais']) ?> <span id="saiba-arrow" style="display:inline-flex; align-items:center;">→</span></p>
+      <p style="font-size:20px; font-weight:700; color:#7D5843; margin:0; display:flex; align-items:center; gap:8px;"><?= e($h['sobre']['saiba_mais']) ?> <span id="saiba-arrow" style="display:inline-flex; align-items:center;">→</span></p>
     </div>
-    <div style="width:100%; position:relative; display:flex; justify-content:center;">
-      <video id="apresentacao-video" src="<?= e(url_midia($h['sobre']['video']['arquivo'])) ?>" controls="" playsinline="" preload="metadata" poster="<?= e(url_midia($h['sobre']['video']['poster'])) ?>" style="max-width:100%; max-height:480px; width:auto; aspect-ratio: 2/3; object-fit:cover; border-radius:20px; display:block; background:#000;"></video>
-      <div onclick="toggleApresentacaoVideo()" style="position:absolute; top:0; left:0; right:0; bottom:44px; cursor:pointer;"></div>
+    <div style="width:100%; display:flex; justify-content:center;">
+      <div style="position:relative; max-width:100%; display:flex;">
+<?php $vl = (int) ($h['sobre']['video']['largura'] ?? 0) ?: 576; $va = (int) ($h['sobre']['video']['altura'] ?? 0) ?: 1024; ?>
+      <video id="apresentacao-video" src="<?= e(url_midia($h['sobre']['video']['arquivo'])) ?>" controls="" playsinline="" preload="none" poster="<?= e(url_midia($h['sobre']['video']['poster'])) ?>" style="scroll-margin-top:150px; max-width:100%; max-height:480px; width:auto; aspect-ratio: <?= $vl ?>/<?= $va ?>; object-fit:cover; border-radius:20px; display:block; background:#000;"></video>
+        <button type="button" class="video-play" onclick="tocarVideo(this)" aria-label="Reproduzir vídeo"><svg width="26" height="26" viewBox="0 0 24 24" fill="#FBF3EE" aria-hidden="true"><path d="M8 5.5v13a1 1 0 0 0 1.5.86l10.5-6.5a1 1 0 0 0 0-1.72L9.5 4.64A1 1 0 0 0 8 5.5z"></path></svg></button>
+      </div>
     </div>
   </div>
 
-  <section id="procedimentos" class="reveal" style="padding: 110px 5%; background:#996C55; box-sizing:border-box;">
+  <section id="procedimentos" class="reveal" style="padding: 110px 5%; background:#7D5843; box-sizing:border-box;">
     <div style="max-width:1280px; margin:0 auto;">
-      <p style="font-size:13px; letter-spacing:0.15em; text-transform:uppercase; color:#E7CDBE; font-weight:700; margin:0 0 14px; text-align:center;"><?= e($h['procedimentos']['rotulo']) ?></p>
+      <p style="font-size:13px; letter-spacing:0.15em; text-transform:uppercase; color:#F3E4DA; font-weight:700; margin:0 0 14px; text-align:center;"><?= e($h['procedimentos']['rotulo']) ?></p>
       <h2 style="font-family:'Marcellus', serif; font-size: clamp(30px, 3vw, 42px); margin: 0 0 56px; color:#FBF3EE; text-align:center;"><?= e($h['procedimentos']['titulo']) ?></h2>
-      <div style="position:relative;">
+      <div class="carrossel" style="position:relative;">
       <div id="procedimentos-grid" style="display:flex; overflow-x:auto; scroll-snap-type:x proximity; -webkit-overflow-scrolling:touch; gap: 16px; padding-bottom:8px; user-select:none; cursor:grab;">
 <?php foreach ($h['procedimentos']['itens'] as $proc): ?>
-        <div style="background:#85604B; border-radius:20px; padding: 40px 32px; min-height:230px; box-sizing:border-box; flex:0 0 300px; scroll-snap-align:start;">
+        <div style="background:#6B4A39; border-radius:20px; padding: 40px 32px; min-height:230px; box-sizing:border-box; flex:0 0 300px; scroll-snap-align:start;">
           <h3 style="font-family:'Marcellus', serif; font-size:22px; margin:0 0 12px; color:#FBF3EE;"><?= e($proc['titulo']) ?></h3>
           <p style="font-size:16px; line-height:1.7; color:#D8C4B8; margin:0;"><?= e($proc['texto']) ?></p>
         </div>
@@ -104,15 +108,16 @@ parcial('estilo-home');
         <?= $seta_dir ?>
 
       </button>
+      <span class="carrossel-contador" data-grid="procedimentos-grid"></span>
       </div>
     </div>
   </section>
 
   <section id="resultados" class="reveal" style="padding: 110px 5%; box-sizing:border-box;">
     <div style="max-width:1280px; margin:0 auto;">
-      <p style="font-size:13px; letter-spacing:0.15em; text-transform:uppercase; color:#996C55; font-weight:700; margin:0 0 14px; text-align:center;"><?= e($h['resultados']['rotulo']) ?></p>
+      <p style="font-size:13px; letter-spacing:0.15em; text-transform:uppercase; color:#7D5843; font-weight:700; margin:0 0 14px; text-align:center;"><?= e($h['resultados']['rotulo']) ?></p>
       <h2 style="font-family:'Marcellus', serif; font-size: clamp(30px, 3vw, 42px); margin: 0 0 56px; color:#3A2A22; text-align:center;"><?= e($h['resultados']['titulo']) ?></h2>
-      <div style="position:relative;">
+      <div class="carrossel" style="position:relative;">
       <div id="resultados-grid" style="display:grid; grid-template-columns: repeat(auto-fit, minmax(320px, 1fr)); gap: 40px;">
 <?php foreach (resultados_home($c) as $item): ?>
 
@@ -134,16 +139,17 @@ parcial('estilo-home');
         </div>
 
       </div>
-      <button class="mobile-scroll-arrow" onclick="scrollByCard('resultados-grid', -1)" aria-label="Ver resultados anteriores" style="display:none; position:absolute; left:-6px; top:50%; transform:translateY(-50%); width:44px; height:44px; border-radius:50%; background:#996C55; border:none; align-items:center; justify-content:center; box-shadow:0 2px 10px rgba(0,0,0,0.25); cursor:pointer; z-index:2;">
+      <button type="button" class="mobile-scroll-arrow" onclick="scrollByCard('resultados-grid', -1)" aria-label="Ver resultados anteriores" style="display:none; position:absolute; left:-6px; top:50%; transform:translateY(-50%); width:44px; height:44px; border-radius:50%; background:#7D5843; border:none; align-items:center; justify-content:center; box-shadow:0 2px 10px rgba(0,0,0,0.25); cursor:pointer; z-index:2;">
         <?= $seta_esq_marrom ?>
 
       </button>
-      <button class="mobile-scroll-arrow" onclick="scrollByCard('resultados-grid', 1)" aria-label="Ver mais resultados" style="display:none; position:absolute; right:-6px; top:50%; transform:translateY(-50%); width:44px; height:44px; border-radius:50%; background:#996C55; border:none; align-items:center; justify-content:center; box-shadow:0 2px 10px rgba(0,0,0,0.25); cursor:pointer; z-index:2;">
+      <button type="button" class="mobile-scroll-arrow" onclick="scrollByCard('resultados-grid', 1)" aria-label="Ver mais resultados" style="display:none; position:absolute; right:-6px; top:50%; transform:translateY(-50%); width:44px; height:44px; border-radius:50%; background:#7D5843; border:none; align-items:center; justify-content:center; box-shadow:0 2px 10px rgba(0,0,0,0.25); cursor:pointer; z-index:2;">
         <?= $seta_dir_marrom ?>
 
       </button>
+      <span class="carrossel-contador" data-grid="resultados-grid"></span>
       </div>
-      <a id="ver-mais-mobile" href="resultados.html" style="display:none; margin-top:48px; align-items:center; justify-content:center; gap:10px; text-decoration:none; color:#FBF3EE; font-weight:700; font-size:18px; background:#996C55; border-radius:14px; padding:14px 22px;">
+      <a id="ver-mais-mobile" href="resultados.html" style="display:none; margin-top:48px; align-items:center; justify-content:center; gap:10px; text-decoration:none; color:#FBF3EE; font-weight:700; font-size:18px; background:#7D5843; border-radius:14px; padding:14px 22px;">
         <?= e($h['resultados']['texto_ver_mais']) ?>
 
         <?= $seta_ver_mais(20) ?>
@@ -154,7 +160,7 @@ parcial('estilo-home');
 
   <section id="cursos" class="reveal" style="padding: 110px 5% 130px; background:#F3E4DA; box-sizing:border-box;">
     <div style="max-width:1080px; margin:0 auto;">
-      <p style="font-size:13px; letter-spacing:0.15em; text-transform:uppercase; color:#996C55; font-weight:700; margin:0 0 14px; text-align:center;"><?= e($h['cursos']['rotulo']) ?></p>
+      <p style="font-size:13px; letter-spacing:0.15em; text-transform:uppercase; color:#7D5843; font-weight:700; margin:0 0 14px; text-align:center;"><?= e($h['cursos']['rotulo']) ?></p>
       <h2 style="font-family:'Marcellus', serif; font-size: clamp(30px, 3vw, 42px); margin: 0 0 16px; color:#3A2A22; text-align:center;"><?= e($h['cursos']['titulo']) ?></h2>
       <p style="font-size:17px; color:#5C4A40; text-align:center; max-width:560px; margin: 0 auto 60px;"><?= e($h['cursos']['descricao']) ?></p>
 
@@ -164,12 +170,12 @@ parcial('estilo-home');
           <div style="display:flex; justify-content:space-between; align-items:flex-start; gap:24px; flex-wrap:wrap;">
             <div>
               <h3 style="font-family:'Marcellus', serif; font-size:26px; margin:0 0 8px; color:#3A2A22;"><?= e($curso['titulo']) ?></h3>
-              <p style="font-size:15px; color:#996C55; font-weight:700; margin:0 0 16px; letter-spacing:0.02em;"><?= e($curso['carga_horaria']) ?></p>
+              <p style="font-size:15px; color:#7D5843; font-weight:700; margin:0 0 16px; letter-spacing:0.02em;"><?= e($curso['carga_horaria']) ?></p>
               <p style="font-size:16px; line-height:1.7; color:#5C4A40; margin:0; max-width:560px;"><?= e($curso['descricao']) ?></p>
             </div>
             <div style="display:flex; flex-direction:column; gap:10px; min-width:220px;">
-              <a href="<?= e(link_whatsapp($ct, $curso['mensagem_whatsapp'])) ?>" target="_blank" rel="noopener" class="btn-fill" style="text-decoration:none; text-align:center; background:#996C55; color:#FBF3EE; padding:13px 24px; border-radius:10px; font-weight:700; font-size:15px; transition: background 0.2s ease;">Chamar no WhatsApp</a>
-              <button onclick="toggleCurso('<?= e($curso['id']) ?>', this)" class="curso-outline" style="cursor:pointer; background:transparent; border:1.5px solid #996C55; color:#996C55; padding:13px 24px; border-radius:10px; font-weight:700; font-size:15px; font-family:inherit; transition: background 0.2s ease;">Ver descrição completa</button>
+              <a href="<?= e(link_whatsapp($ct, $curso['mensagem_whatsapp'])) ?>" target="_blank" rel="noopener" class="btn-fill" style="text-decoration:none; text-align:center; background:#7D5843; color:#FBF3EE; padding:13px 24px; border-radius:10px; font-weight:700; font-size:15px; transition: background 0.2s ease;">Chamar no WhatsApp</a>
+              <button type="button" onclick="toggleCurso('<?= e($curso['id']) ?>', this)" aria-expanded="false" aria-controls="<?= e($curso['id']) ?>" class="curso-outline" style="cursor:pointer; background:transparent; border:1.5px solid #7D5843; color:#7D5843; padding:13px 24px; border-radius:10px; font-weight:700; font-size:15px; font-family:inherit; transition: background 0.2s ease;">Ver descrição completa</button>
             </div>
           </div>
           <div id="<?= e($curso['id']) ?>" style="display:none; margin-top:32px; padding-top:32px; border-top:1px solid #E7CDBE; grid-template-columns: 1fr 1fr; gap:40px;">
@@ -198,9 +204,9 @@ parcial('estilo-home');
 
   <section id="depoimentos" class="reveal" style="padding: 110px 5%; box-sizing:border-box;">
     <div style="max-width:1280px; margin:0 auto;">
-      <p style="font-size:13px; letter-spacing:0.15em; text-transform:uppercase; color:#996C55; font-weight:700; margin:0 0 14px; text-align:center;"><?= e($h['depoimentos']['rotulo']) ?></p>
+      <p style="font-size:13px; letter-spacing:0.15em; text-transform:uppercase; color:#7D5843; font-weight:700; margin:0 0 14px; text-align:center;"><?= e($h['depoimentos']['rotulo']) ?></p>
       <h2 style="font-family:'Marcellus', serif; font-size: clamp(30px, 3vw, 42px); margin: 0 0 56px; color:#3A2A22; text-align:center;"><?= e($h['depoimentos']['titulo']) ?></h2>
-      <div style="position:relative;">
+      <div class="carrossel" style="position:relative;">
       <div id="depoimentos-grid" style="display:flex; overflow-x:auto; scroll-snap-type:x proximity; -webkit-overflow-scrolling:touch; gap: 32px; padding-bottom:8px; user-select:none;">
 <?php foreach ($h['depoimentos']['itens'] as $dep): ?>
         <div style="background:#F3E4DA; padding: 36px 32px; border-radius:20px; display:flex; flex-direction:column; height:100%; box-sizing:border-box; flex:0 0 340px; scroll-snap-align:start;">
@@ -213,7 +219,7 @@ parcial('estilo-home');
           <p style="font-size:16.5px; line-height:1.8; color:#4A3A32; margin:0 0 24px; font-style:italic;"><?= e($dep['texto']) ?></p>
           <div style="margin-top:auto;">
             <p style="margin:0; font-weight:700; font-size:15.5px; color:#3A2A22;"><?= e($dep['autor']) ?></p>
-            <p style="margin:2px 0 0; font-size:14px; color:#996C55;"><?= e($dep['servico']) ?></p>
+            <p style="margin:2px 0 0; font-size:14px; color:#7D5843;"><?= e($dep['servico']) ?></p>
           </div>
         </div>
 <?php endforeach; ?>
@@ -226,6 +232,7 @@ parcial('estilo-home');
         <?= $seta_dir ?>
 
       </button>
+      <span class="carrossel-contador" data-grid="depoimentos-grid"></span>
       </div>
     </div>
   </section>
@@ -233,16 +240,16 @@ parcial('estilo-home');
   <section id="contato" class="reveal" style="padding: 110px 5% 90px; background:#F3E4DA; box-sizing:border-box;">
     <div style="max-width:1150px; margin:0 auto; display:grid; grid-template-columns: 1fr 1fr; gap:72px; align-items:center;" id="contato-grid">
       <div style="margin-left: 48px;">
-        <p style="font-size:13px; letter-spacing:0.15em; text-transform:uppercase; color:#996C55; font-weight:700; margin:0 0 14px;"><?= e($h['contato_secao']['rotulo']) ?><br></p>
+        <p style="font-size:13px; letter-spacing:0.15em; text-transform:uppercase; color:#7D5843; font-weight:700; margin:0 0 14px;"><?= e($h['contato_secao']['rotulo']) ?><br></p>
         <h2 style="font-family:'Marcellus', serif; font-size: clamp(30px, 3vw, 42px); margin: 0 0 28px; color:#3A2A22;"><?= e($h['contato_secao']['titulo']) ?></h2>
-        <a href="<?= e($wa) ?>" target="_blank" rel="noopener" class="btn-fill btn-lift" style="text-decoration:none; display:inline-flex; align-items:center; gap:10px; background:#996C55; color:#FBF3EE; padding:18px 34px; border-radius:10px; font-weight:700; font-size:17px; margin-bottom:44px; transition: background 0.2s ease, transform 0.2s ease;"><?= e($h['hero']['botao_principal']) ?></a>
+        <a href="<?= e($wa) ?>" target="_blank" rel="noopener" class="btn-fill btn-lift" style="text-decoration:none; display:inline-flex; align-items:center; gap:10px; background:#7D5843; color:#FBF3EE; padding:18px 34px; border-radius:10px; font-weight:700; font-size:17px; margin-bottom:44px; transition: background 0.2s ease, transform 0.2s ease;"><?= e($h['hero']['botao_principal']) ?></a>
 
         <div style="display:flex; flex-direction:column; gap:26px;">
           <div>
             <div style="display:flex; gap:10px; align-items:center; margin:0 0 8px;">
               <?= $icone_pino ?>
 
-              <p style="font-size:12.5px; letter-spacing:0.1em; text-transform:uppercase; color:#996C55; font-weight:700; margin:0;">Endereço</p>
+              <p style="font-size:12.5px; letter-spacing:0.1em; text-transform:uppercase; color:#7D5843; font-weight:700; margin:0;">Endereço</p>
             </div>
             <p style="font-size:16.5px; line-height:1.7; color:#5C4A40; margin:0;"><?= implode('<br>', array_map('e', $ct['endereco_linhas'])) ?></p>
           </div>
@@ -250,7 +257,7 @@ parcial('estilo-home');
             <div style="display:flex; gap:10px; align-items:center; margin:0 0 8px;">
               <?= $icone_relogio ?>
 
-              <p style="font-size:12.5px; letter-spacing:0.1em; text-transform:uppercase; color:#996C55; font-weight:700; margin:0;">Horário de atendimento</p>
+              <p style="font-size:12.5px; letter-spacing:0.1em; text-transform:uppercase; color:#7D5843; font-weight:700; margin:0;">Horário de atendimento</p>
             </div>
             <p style="font-size:16.5px; line-height:1.7; color:#5C4A40; margin:0;"><?= e($ct['horario']) ?></p>
           </div>
@@ -258,20 +265,21 @@ parcial('estilo-home');
             <div style="display:flex; gap:10px; align-items:center; margin:0 0 8px;">
               <?= $icone_insta ?>
 
-              <p style="font-size:12.5px; letter-spacing:0.1em; text-transform:uppercase; color:#996C55; font-weight:700; margin:0;">Instagram</p>
+              <p style="font-size:12.5px; letter-spacing:0.1em; text-transform:uppercase; color:#7D5843; font-weight:700; margin:0;">Instagram</p>
             </div>
             <a href="https://instagram.com/<?= e($ct['instagram_usuario']) ?>" target="_blank" rel="noopener" style="font-size:16.5px; color:#5C4A40; text-decoration:none; font-weight:600;">@<?= e($ct['instagram_usuario']) ?></a>
           </div>
-          <a id="avaliacao-online-link" href="<?= e($ct['avaliacao_online']) ?>" target="_blank" rel="noopener" class="btn-outline-brown" style="text-decoration:none; display:inline-flex; align-items:center; gap:10px; background:transparent; border:1.5px solid #996C55; color:#996C55; padding:14px 28px; border-radius:10px; font-weight:700; font-size:16px; align-self:flex-start; transition: background 0.2s ease;">Avaliação Online</a>
+          <a id="avaliacao-online-link" href="<?= e($ct['avaliacao_online']) ?>" target="_blank" rel="noopener" class="btn-outline-brown" style="text-decoration:none; display:inline-flex; align-items:center; gap:10px; background:transparent; border:1.5px solid #7D5843; color:#7D5843; padding:14px 28px; border-radius:10px; font-weight:700; font-size:16px; align-self:flex-start; transition: background 0.2s ease;">Avaliação Online</a>
         </div>
       </div>
       <div style="position:relative; width:100%; border-radius:20px; overflow:hidden; min-height:360px;">
         <iframe src="<?= e($ct['maps_embed']) ?>" title="Localização do Studio Gabriela Santos" style="position:absolute; inset:0; width:100%; height:100%; border:0;" loading="lazy" referrerpolicy="no-referrer-when-downgrade"></iframe>
-        <a href="<?= e($ct['maps_link']) ?>" target="_blank" rel="noopener" class="btn-fill" style="position:absolute; bottom:16px; left:16px; text-decoration:none; background:#996C55; color:#FBF3EE; padding:11px 20px; border-radius:10px; font-weight:700; font-size:13px; transition: background 0.2s ease;">Abrir no Google Maps</a>
+        <a href="<?= e($ct['maps_link']) ?>" target="_blank" rel="noopener" class="btn-fill" style="position:absolute; bottom:16px; left:16px; text-decoration:none; background:#7D5843; color:#FBF3EE; padding:11px 20px; border-radius:10px; font-weight:700; font-size:13px; transition: background 0.2s ease;">Abrir no Google Maps</a>
       </div>
     </div>
   </section>
 
+</main>
 <?php parcial('rodape', $vars); ?>
 <?php parcial('script-home'); ?>
 
