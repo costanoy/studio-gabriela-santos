@@ -137,11 +137,11 @@ parcial('estilo-home');
         </div>
 
       </div>
-      <button class="mobile-scroll-arrow" onclick="scrollByCard('resultados-grid', -1)" aria-label="Ver resultados anteriores" style="display:none; position:absolute; left:-6px; top:50%; transform:translateY(-50%); width:44px; height:44px; border-radius:50%; background:#996C55; border:none; align-items:center; justify-content:center; box-shadow:0 2px 10px rgba(0,0,0,0.25); cursor:pointer; z-index:2;">
+      <button type="button" class="mobile-scroll-arrow" onclick="scrollByCard('resultados-grid', -1)" aria-label="Ver resultados anteriores" style="display:none; position:absolute; left:-6px; top:50%; transform:translateY(-50%); width:44px; height:44px; border-radius:50%; background:#996C55; border:none; align-items:center; justify-content:center; box-shadow:0 2px 10px rgba(0,0,0,0.25); cursor:pointer; z-index:2;">
         <?= $seta_esq_marrom ?>
 
       </button>
-      <button class="mobile-scroll-arrow" onclick="scrollByCard('resultados-grid', 1)" aria-label="Ver mais resultados" style="display:none; position:absolute; right:-6px; top:50%; transform:translateY(-50%); width:44px; height:44px; border-radius:50%; background:#996C55; border:none; align-items:center; justify-content:center; box-shadow:0 2px 10px rgba(0,0,0,0.25); cursor:pointer; z-index:2;">
+      <button type="button" class="mobile-scroll-arrow" onclick="scrollByCard('resultados-grid', 1)" aria-label="Ver mais resultados" style="display:none; position:absolute; right:-6px; top:50%; transform:translateY(-50%); width:44px; height:44px; border-radius:50%; background:#996C55; border:none; align-items:center; justify-content:center; box-shadow:0 2px 10px rgba(0,0,0,0.25); cursor:pointer; z-index:2;">
         <?= $seta_dir_marrom ?>
 
       </button>
@@ -172,7 +172,7 @@ parcial('estilo-home');
             </div>
             <div style="display:flex; flex-direction:column; gap:10px; min-width:220px;">
               <a href="<?= e(link_whatsapp($ct, $curso['mensagem_whatsapp'])) ?>" target="_blank" rel="noopener" class="btn-fill" style="text-decoration:none; text-align:center; background:#996C55; color:#FBF3EE; padding:13px 24px; border-radius:10px; font-weight:700; font-size:15px; transition: background 0.2s ease;">Chamar no WhatsApp</a>
-              <button onclick="toggleCurso('<?= e($curso['id']) ?>', this)" class="curso-outline" style="cursor:pointer; background:transparent; border:1.5px solid #996C55; color:#996C55; padding:13px 24px; border-radius:10px; font-weight:700; font-size:15px; font-family:inherit; transition: background 0.2s ease;">Ver descrição completa</button>
+              <button type="button" onclick="toggleCurso('<?= e($curso['id']) ?>', this)" aria-expanded="false" aria-controls="<?= e($curso['id']) ?>" class="curso-outline" style="cursor:pointer; background:transparent; border:1.5px solid #996C55; color:#996C55; padding:13px 24px; border-radius:10px; font-weight:700; font-size:15px; font-family:inherit; transition: background 0.2s ease;">Ver descrição completa</button>
             </div>
           </div>
           <div id="<?= e($curso['id']) ?>" style="display:none; margin-top:32px; padding-top:32px; border-top:1px solid #E7CDBE; grid-template-columns: 1fr 1fr; gap:40px;">

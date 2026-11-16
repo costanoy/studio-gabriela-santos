@@ -24,10 +24,34 @@ function goHome(e) {
   window.scrollTo({ top: 0, behavior: 'smooth' });
   history.replaceState(null, '', '#home');
 }
+function abrirMenu(abrir) {
+  const wrap = document.getElementById('mobile-nav-wrap');
+  const botao = document.getElementById('nav-toggle');
+  if (!wrap) return;
+  wrap.style.display = abrir ? 'flex' : 'none';
+  if (botao) {
+    botao.setAttribute('aria-expanded', abrir ? 'true' : 'false');
+    botao.setAttribute('aria-label', abrir ? 'Fechar menu' : 'Abrir menu');
+  }
+}
+function alternarMenu() {
+  const wrap = document.getElementById('mobile-nav-wrap');
+  abrirMenu(!!wrap && wrap.style.display !== 'flex');
+}
+document.addEventListener('keydown', function (e) {
+  const wrap = document.getElementById('mobile-nav-wrap');
+  if (e.key === 'Escape' && wrap && wrap.style.display === 'flex') {
+    abrirMenu(false);
+    const botao = document.getElementById('nav-toggle');
+    if (botao) botao.focus();
+  }
+});
+window.matchMedia('(min-width: 1101px)').addEventListener('change', function (m) {
+  if (m.matches) abrirMenu(false);
+});
 function goHomeMobile(e) {
   e.preventDefault();
-  const wrap = document.getElementById('mobile-nav-wrap');
-  if (wrap) wrap.style.display = 'none';
+  abrirMenu(false);
   window.scrollTo({ top: 0, behavior: 'smooth' });
   history.replaceState(null, '', '#home');
 }
@@ -54,6 +78,7 @@ function toggleCurso(id, btn) {
   const open = el.style.display === 'grid';
   el.style.display = open ? 'none' : 'grid';
   btn.textContent = open ? 'Ver descrição completa' : 'Fechar descrição';
+  btn.setAttribute('aria-expanded', open ? 'false' : 'true');
 }
 function baSlide(input) {
   const wrap = input.closest('div');
@@ -93,8 +118,7 @@ window.addEventListener('scroll', function () {
   document.getElementById('site-header').classList.toggle('scrolled', __scrolled);
 }, { passive: true });
 window.addEventListener('hashchange', function () {
-  const wrap = document.getElementById('mobile-nav-wrap');
-  if (wrap) wrap.style.display = 'none';
+  abrirMenu(false);
 });
 (function () {
   const grid = document.getElementById('procedimentos-grid');
