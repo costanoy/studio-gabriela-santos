@@ -11,7 +11,7 @@ $nome_comparador = 'Comparar antes e depois' . (!empty($item['titulo']) ? ': ' .
 ?>
           <div class="ba" style="position:relative; width:100%; aspect-ratio:3/4; border-radius:20px; overflow:hidden; touch-action:pan-y; cursor:ew-resize; user-select:none; -webkit-user-select:none;">
             <img draggable="false" src="<?= e(url_midia($item['depois']['arquivo'])) ?>" alt="<?= e($item['depois']['alt']) ?>" loading="lazy" style="position:absolute; <?= e($quadro($item['depois'])) ?>; transform:translate(-50%,-50%);">
-            <span class="ba-depois" style="position:absolute; bottom:44px; right:10px; z-index:1; background:rgba(153,108,85,0.9); color:#FBF3EE; font-size:11px; letter-spacing:0.1em; text-transform:uppercase; padding:5px 10px; font-weight:700;">Depois</span>
+            <span class="ba-depois" style="position:absolute; bottom:44px; right:10px; z-index:1; background:rgba(125,88,67,0.92); color:#FBF3EE; font-size:11px; letter-spacing:0.1em; text-transform:uppercase; padding:5px 10px; font-weight:700;">Depois</span>
             <div class="ba-clip" style="position:absolute; inset:0; clip-path: inset(0 50% 0 0);">
               <img draggable="false" src="<?= e(url_midia($item['antes']['arquivo'])) ?>" alt="<?= e($item['antes']['alt']) ?>" loading="lazy" style="position:absolute; <?= e($quadro($item['antes'])) ?>; transform:translate(-50%,-50%);">
               <span class="ba-antes" style="position:absolute; bottom:44px; left:10px; background:rgba(58,42,34,0.75); color:#FBF3EE; font-size:11px; letter-spacing:0.1em; text-transform:uppercase; padding:5px 10px; font-weight:700;">Antes</span>

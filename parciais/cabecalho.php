@@ -27,11 +27,11 @@ if ($pagina === 'home'): ?>
       </button>
     </div>
 
-    <nav id="mobile-nav-wrap" onclick="event.stopPropagation()" style="display:none; position:absolute; top:100%; left:0; right:0; z-index:60; background:#996C55; border-bottom:1px solid #5C4A40; border-radius: 0 0 20px 20px; flex-direction:column; padding: 8px 24px 20px;">
+    <nav id="mobile-nav-wrap" onclick="event.stopPropagation()" style="display:none; position:absolute; top:100%; left:0; right:0; z-index:60; background:#7D5843; border-bottom:1px solid #5C4A40; border-radius: 0 0 20px 20px; flex-direction:column; padding: 8px 24px 20px;">
 <?php foreach ($menu as $i => [$ancora, $rotulo]): ?>
       <a href="<?= e($ancora) ?>" onclick="<?= $i === 0 ? 'goHomeMobile(event)' : $fecha ?>" style="text-decoration:none; color:#FBF3EE; font-weight:600; font-size:16px; padding:12px 0; border-bottom:1px solid #5C4A40;"><?= e($rotulo) ?></a>
 <?php endforeach; ?>
-      <a href="<?= e($wa) ?>" target="_blank" rel="noopener" onclick="<?= $fecha ?>" style="text-decoration:none; text-align:center; background:#FBF3EE; color:#996C55; font-weight:700; font-size:16px; padding:12px 0; margin-top:12px; border-radius:10px;">Agendar horário</a>
+      <a href="<?= e($wa) ?>" target="_blank" rel="noopener" onclick="<?= $fecha ?>" style="text-decoration:none; text-align:center; background:#FBF3EE; color:#7D5843; font-weight:700; font-size:16px; padding:12px 0; margin-top:12px; border-radius:10px;">Agendar horário</a>
     </nav>
   </header>
 <?php else: ?>

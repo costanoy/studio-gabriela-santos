@@ -201,8 +201,8 @@
 <style>
   html { scroll-behavior: smooth; }
   body { margin: 0; background: #FBF3EE; }
-  a { color: #996C55; }
-  a:hover { color: #8A5340; }
+  a { color: #7D5843; }
+  a:hover { color: #6B4A39; }
   ::selection { background: #E7CDBE; }
   #nav-toggle { display: none; }
   header a, header button, #mobile-nav-wrap a { -webkit-tap-highlight-color: transparent; }

@@ -200,8 +200,8 @@
 </style>
 <style>
   body { margin: 0; background: #FBF3EE; }
-  a { color: #996C55; }
-  a:hover { color: #7d5843; }
+  a { color: #7D5843; }
+  a:hover { color: #6B4A39; }
   video { display:block; }
   header a, header button { -webkit-tap-highlight-color: transparent; }
   :focus-visible { outline: 2px solid #7D5843; outline-offset: 3px; }

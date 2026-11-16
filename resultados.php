@@ -16,7 +16,7 @@ parcial('estilo-resultados');
 <main id="conteudo">
 
   <section style="padding: 72px 5% 40px; text-align:center;">
-    <p style="font-size:13px; letter-spacing:0.15em; text-transform:uppercase; color:#996C55; font-weight:700; margin:0 0 14px;">Transformações reais</p>
+    <p style="font-size:13px; letter-spacing:0.15em; text-transform:uppercase; color:#7D5843; font-weight:700; margin:0 0 14px;">Transformações reais</p>
     <h1 style="font-family:'Marcellus', serif; font-size: clamp(32px, 4vw, 48px); margin:0; color:#3A2A22;">Todos os resultados</h1>
   </section>
 
