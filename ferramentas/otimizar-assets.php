@@ -6,7 +6,8 @@
 //   php ferramentas/otimizar-assets.php --etapa=logo-hero     (T03)
 //   php ferramentas/otimizar-assets.php --etapa=fotos         (T01)
 //   php ferramentas/otimizar-assets.php --etapa=videos        (L01)
-//   php ferramentas/otimizar-assets.php --etapa=relatorio     (grava .auditoria/assets-depois.md)
+//   php ferramentas/otimizar-assets.php --etapa=frame0        (gera .auditoria/frame0-apresentacao.png)
+//   php ferramentas/otimizar-assets.php --etapa=relatorio    (grava .auditoria/assets-depois.md)
 //   php ferramentas/otimizar-assets.php                        (todas, na ordem)
 //   php ferramentas/otimizar-assets.php --verificar            (confere o resultado, não altera nada)
 //
@@ -251,6 +252,28 @@ function etapa_videos(): void
     }
 }
 
+// Gera .auditoria/frame0-apresentacao.png a partir do vídeo ORIGINAL (usado pelo teste L01).
+// O ffmpeg novo grava um bloco cICP (perfil bt709) no PNG; o Chromium converte as cores por causa dele,
+// e o pôster em WebP (sem perfil) parece diferir ~6/255. O bloco é tirado para a comparação ser justa.
+function etapa_frame0(): void
+{
+    $orig = is_file('acervo/originais/apresentacao.mp4') ? 'acervo/originais/apresentacao.mp4' : 'assets/apresentacao.mp4';
+    $saida = '.auditoria/frame0-apresentacao.png';
+    ffmpeg(['-i', $orig, '-frames:v', 1, $saida]);
+    $png = file_get_contents($saida);
+    $novo = substr($png, 0, 8);
+    $pos = 8;
+    while ($pos < strlen($png)) {
+        $tam = unpack('N', substr($png, $pos, 4))[1];
+        $tipo = substr($png, $pos + 4, 4);
+        if ($tipo !== 'cICP') {
+            $novo .= substr($png, $pos, 12 + $tam);
+        }
+        $pos += 12 + $tam;
+    }
+    file_put_contents($saida, $novo);
+}
+
 function relatorio(): void
 {
     $linhas = [];
@@ -389,7 +412,7 @@ if (isset($opcoes['verificar'])) {
     exit(verificar());
 }
 
-$etapas = $etapa === 'tudo' ? ['logo-hero', 'fotos', 'videos', 'relatorio'] : [$etapa];
+$etapas = $etapa === 'tudo' ? ['frame0', 'logo-hero', 'fotos', 'videos', 'relatorio'] : [$etapa];
 foreach ($etapas as $e) {
     switch ($e) {
         case 'logo-hero':
@@ -400,6 +423,9 @@ foreach ($etapas as $e) {
             break;
         case 'videos':
             etapa_videos();
+            break;
+        case 'frame0':
+            etapa_frame0();
             break;
         case 'relatorio':
             relatorio();
