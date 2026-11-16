@@ -316,7 +316,9 @@
         S.resumo = [];
         atualizarBarra();
         avisoTopo(null);
-        toast('Salvo no site.', null, 6);
+        // Desfazer: volta para a versão que estava no site um instante antes (a 0 é o conteúdo original)
+        var anterior = r.revisao - 1;
+        toast('Salvo no site.', { texto: 'Desfazer', fazer: function () { restaurarVersao(anterior, 'Desfeito. O site voltou ao que estava antes.'); } }, 10);
         return r;
       }
       if (r.status === 422) {
@@ -1145,6 +1147,97 @@
     raiz.appendChild(corpo);
     raiz.appendChild(barraAcao('Salvar no site'));
   };
+
+  // ---------------------------------------------------------------------------
+  // Janela de confirmação (usada ao voltar versão e ao apagar)
+  // ---------------------------------------------------------------------------
+  function confirmar(o) {
+    return new Promise(function (resolve) {
+      var anterior = document.activeElement;
+      var fundo = h('div', { class: 'modal-fundo' });
+      function fechar(v) {
+        document.removeEventListener('keydown', tecla);
+        if (fundo.parentNode) fundo.parentNode.removeChild(fundo);
+        if (anterior && anterior.focus && document.body.contains(anterior)) anterior.focus();
+        resolve(v);
+      }
+      function tecla(ev) { if (ev.key === 'Escape') fechar(false); }
+      var cancelar = h('button', { class: 'botao', type: 'button', id: 'modal-cancelar', text: o.cancelar || 'Cancelar', on: { click: function () { fechar(false); } } });
+      var ok = h('button', { class: 'botao ' + (o.perigo ? 'botao-perigo' : 'botao-principal'), type: 'button', id: 'modal-ok', text: o.ok, on: { click: function () { fechar(true); } } });
+      fundo.appendChild(h('div', { class: 'modal', attrs: { role: 'dialog', 'aria-modal': 'true', 'aria-labelledby': 'modal-titulo' } },
+        h('h2', { id: 'modal-titulo', text: o.titulo }),
+        h('p', { text: o.texto }),
+        h('div', { class: 'linha-botoes modal-botoes' }, cancelar, ok)));
+      document.body.appendChild(fundo);
+      document.addEventListener('keydown', tecla);
+      cancelar.focus();
+    });
+  }
+
+  // ---------------------------------------------------------------------------
+  // Versões e Desfazer (L13)
+  // ---------------------------------------------------------------------------
+  /** Volta o site para a versão n (0 = conteúdo original). A volta também vira uma versão nova. */
+  function restaurarVersao(n, aviso) {
+    var revAntes = S.rev;
+    return api('restaurar', { n: n, revisao: S.rev }).then(function (r) {
+      if (r.ok) {
+        S.c = r.conteudo;
+        S.rev = r.revisao;
+        S.sujo = false;
+        S.resumo = [];
+        desenhar();
+        toast(aviso, { texto: 'Desfazer', fazer: function () { restaurarVersao(revAntes, 'Desfeito. O site voltou ao que estava antes.'); } }, 10);
+      } else {
+        avisoTopo(mensagemErro(r));
+      }
+      return r;
+    });
+  }
+
+  function quando(texto) {
+    var d = new Date(texto);
+    if (!texto || isNaN(d.getTime())) return '';
+    return d.toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit', year: 'numeric' }) + ' às ' +
+      d.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' });
+  }
+
+  TELAS.versoes = function (raiz) {
+    raiz.appendChild(topo('Versões do site', 'home'));
+    var corpo = h('main', { id: 'conteudo-tela' });
+    corpo.appendChild(h('p', { class: 'dica', text: 'Cada vez que você salva, o site guarda uma versão. Ficam guardadas as últimas 20. Voltar não apaga nada: dá para desfazer.' }));
+    if (S.sujo) corpo.appendChild(alerta('Você tem mudanças que ainda não salvou. Se voltar uma versão, elas serão perdidas.', 'aviso'));
+    var lista = h('div', { id: 'lista-versoes' }, h('p', { class: 'carregando', text: 'Carregando…' }));
+    corpo.appendChild(lista);
+    raiz.appendChild(corpo);
+    api('versoes').then(function (r) {
+      limpar(lista);
+      if (!r.ok) { lista.appendChild(alerta(mensagemErro(r))); return; }
+      r.versoes.forEach(function (v) {
+        var atual = v.n === S.rev;
+        var nome = v.n === 0 ? 'Conteúdo original do site' : quando(v.data);
+        var linha = h('div', { class: 'linha-res versao' + (atual ? ' atual' : ''), attrs: { 'data-n': String(v.n) } },
+          h('div', { class: 'linha-res-corpo' },
+            h('strong', { text: nome }),
+            v.n === 0 ? null : h('span', { class: 'dica', text: v.resumo || 'Salvou mudanças' }),
+            atual ? h('span', { class: 'etiqueta', text: 'É a versão que está no site agora' }) : null,
+            atual ? null : h('div', { class: 'linha-botoes' },
+              h('button', { class: 'botao', type: 'button', text: 'Voltar para esta versão', attrs: { 'aria-label': 'Voltar para a versão ' + nome },
+                on: { click: function () {
+                  confirmar({
+                    titulo: 'Voltar para esta versão?',
+                    texto: 'O site vai ficar como estava em: ' + nome + '. O que está no site agora continua guardado, e você pode desfazer.',
+                    ok: 'Voltar para esta versão'
+                  }).then(function (sim) {
+                    if (!sim) return;
+                    restaurarVersao(v.n, 'Pronto. O site voltou para: ' + nome + '.');
+                  });
+                } } }))));
+        lista.appendChild(linha);
+      });
+    });
+  };
+  CARTOES.push({ id: 'cartao-versoes', icone: '🕘', titulo: 'Versões', texto: 'Voltar para como o site estava antes', ir: function () { ir('versoes'); } });
 
   /*@@TELAS*/
 

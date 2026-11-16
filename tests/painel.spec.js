@@ -472,4 +472,113 @@ test.describe('P2 resultados e enquadramento', () => {
   });
 });
 
+// ===========================================================================
+// L13: versões e Desfazer
+// ===========================================================================
+async function salvarTitulo(page, titulo, rev) {
+  const lido = await chamar(page, { acao: 'ler' });
+  lido.conteudo.home.hero.titulo = titulo;
+  return chamar(page, { acao: 'salvar', conteudo: lido.conteudo, revisao: rev === undefined ? lido.revisao : rev, resumo: 'Título ' + titulo });
+}
+
+test.describe('L13 versões e Desfazer', () => {
+  test('Desfazer logo depois de salvar volta ao que estava (primeiro save volta ao original)', async ({ page }) => {
+    await entrar(page);
+    const original = (await chamar(page, { acao: 'ler' })).conteudo.home.hero.titulo;
+    await page.click('#cartao-textos');
+    const det = await abrirGrupo(page, 'topo');
+    await det.locator('[data-caminho="home.hero.titulo"] input').fill('Título provisório');
+    await page.click('#salvar');
+    const toastEl = page.locator('.toast');
+    await expect(toastEl).toContainText('Salvo no site');
+    await toastEl.getByRole('button', { name: 'Desfazer' }).click();
+    await expect(page.locator('.toast')).toContainText('Desfeito');
+    expect((await chamar(page, { acao: 'ler' })).conteudo.home.hero.titulo).toBe(original);
+    // desfazer o desfazer traz o título de volta
+    await page.locator('.toast').getByRole('button', { name: 'Desfazer' }).click();
+    await expect(page.locator('.toast')).toContainText('Desfeito');
+    expect((await chamar(page, { acao: 'ler' })).conteudo.home.hero.titulo).toBe('Título provisório');
+  });
+
+  test('o aviso Desfazer dura 10 segundos', async ({ page }) => {
+    await entrar(page);
+    await page.click('#cartao-textos');
+    const det = await abrirGrupo(page, 'topo');
+    await det.locator('[data-caminho="home.hero.titulo"] input').fill('Aviso longo');
+    await page.click('#salvar');
+    await expect(page.locator('.toast')).toBeVisible();
+    await page.waitForTimeout(7000);
+    await expect(page.locator('.toast')).toBeVisible();
+    await page.waitForTimeout(4500);
+    await expect(page.locator('.toast')).toHaveCount(0);
+  });
+
+  test('21 saves deixam 20 versões; voltar para uma versão pede confirmação e dá para desfazer', async ({ page }) => {
+    await entrar(page);
+    let rev = 0;
+    for (let i = 1; i <= 21; i++) {
+      const r = await salvarTitulo(page, 'T' + i, rev);
+      expect(r.ok).toBe(true);
+      rev = r.revisao;
+    }
+    const lista = await chamar(page, { acao: 'versoes' });
+    expect(lista.versoes.length).toBe(21); // 20 guardadas + o conteúdo original
+    expect(lista.versoes.map((v) => v.n).slice(0, 2)).toEqual([21, 20]);
+    expect(lista.versoes.some((v) => v.n === 1)).toBe(false);
+
+    await page.reload();
+    await page.click('#cartao-versoes');
+    await expect(page.locator('#lista-versoes .versao')).toHaveCount(21);
+    await expect(page.locator('.versao[data-n="21"]')).toContainText('versão que está no site agora');
+    await page.locator('.versao[data-n="15"]').getByRole('button', { name: /Voltar para/ }).click();
+    await expect(page.locator('#modal-ok')).toBeVisible();
+    await page.click('#modal-cancelar');
+    expect((await chamar(page, { acao: 'ler' })).conteudo.home.hero.titulo).toBe('T21');
+    await page.locator('.versao[data-n="15"]').getByRole('button', { name: /Voltar para/ }).click();
+    await page.click('#modal-ok');
+    await expect(page.locator('.toast')).toContainText('Pronto');
+    expect((await chamar(page, { acao: 'ler' })).conteudo.home.hero.titulo).toBe('T15');
+    await page.locator('.toast').getByRole('button', { name: 'Desfazer' }).click();
+    await expect(page.locator('.toast')).toContainText('Desfeito');
+    expect((await chamar(page, { acao: 'ler' })).conteudo.home.hero.titulo).toBe('T21');
+    // a versão original sempre está na lista
+    await expect(page.locator('.versao[data-n="0"]')).toContainText('Conteúdo original');
+  });
+
+  test('a mídia só vai para a lixeira quando nenhuma versão guardada usa mais', async ({ page }) => {
+    const pasta = path.join(__dirname, '..', 'conteudo', 'midia');
+    const arquivo = path.join(pasta, 'lixeira-teste.jpg');
+    fs.mkdirSync(pasta, { recursive: true });
+    fs.copyFileSync(path.join(__dirname, '..', 'assets', 'results', 'drenagem-antes1.jpeg'), arquivo);
+    try {
+      await entrar(page);
+      const trocar = async (arq, rev) => {
+        const lido = await chamar(page, { acao: 'ler' });
+        lido.conteudo.resultados.itens.find((x) => x.id === 'foto-ultrassom-1').arquivo = arq;
+        return chamar(page, { acao: 'salvar', conteudo: lido.conteudo, revisao: rev, resumo: 'Trocou a foto' });
+      };
+      let r = await trocar('conteudo/midia/lixeira-teste.jpg', 0);
+      expect(r.ok).toBe(true);
+      r = await trocar('assets/results/ultrassom-antes1.jpeg', r.revisao);
+      expect(r.ok).toBe(true);
+      expect((await chamar(page, { acao: 'lixeira' })).itens.length).toBe(0);
+      for (let i = 0; i < 18; i++) {
+        r = await salvarTitulo(page, 'L' + i, r.revisao);
+        expect(r.ok).toBe(true);
+      }
+      // 20 saves: a versão 1 (que usava a foto) ainda está guardada
+      expect(fs.existsSync(arquivo)).toBe(true);
+      expect((await chamar(page, { acao: 'lixeira' })).itens.length).toBe(0);
+      r = await salvarTitulo(page, 'L-final', r.revisao); // 21º: a versão 1 sai do histórico
+      expect(r.ok).toBe(true);
+      const lix = await chamar(page, { acao: 'lixeira' });
+      expect(lix.itens.length).toBe(1);
+      expect(lix.itens[0].nome).toBe('lixeira-teste.jpg');
+      expect(fs.existsSync(arquivo)).toBe(false);
+    } finally {
+      fs.rmSync(arquivo, { force: true });
+    }
+  });
+});
+
 // @@FIM
