@@ -216,7 +216,7 @@
               var recuperar = function () {
                 S.c = rasc.c;
                 S.sujo = true;
-                S.apagados = [];
+                S.apagados = []; limparPilhas();
                 S.resumo = ['Recuperou mudanças guardadas'];
                 rascunhoApagar();
                 ir(rasc.tela === 'resultados' ? 'resultados' : 'textos');
@@ -368,7 +368,7 @@
         var haviaApagados = S.apagados.length > 0;
         S.sujo = false;
         S.resumo = [];
-        S.apagados = [];
+        S.apagados = []; limparPilhas();
         if (haviaApagados) { var y0 = window.scrollY; desenhar(); window.scrollTo(0, y0); }
         atualizarBarra();
         avisoTopo(null);
@@ -395,7 +395,7 @@
             if (!ok) return;
             S.sujo = false;
             S.resumo = [];
-            S.apagados = [];
+            S.apagados = []; limparPilhas();
             S.tela = 'home';
             S.arg = null;
             desenhar();
@@ -1046,16 +1046,56 @@
     return { el: quadro, pintar: pintar };
   }
 
+  /** Passos para "Desfazer ajuste", por foto (item + lado). Guarda até PASSOS_MAX enquadramentos anteriores. */
+  var PASSOS_MAX = 50;
+  var pilhas = {};
+  function limparPilhas(prefixo) {
+    Object.keys(pilhas).forEach(function (k) { if (!prefixo || k.indexOf(prefixo) === 0) delete pilhas[k]; });
+  }
+  S.sobrepor = false;   // "Sobrepor a outra foto" ligado
+  S.transp = 50;        // transparência da outra foto (0 a 100)
+
   /** Quadro de edição: 1 dedo arrasta, 2 dedos aumentam/diminuem. */
   function montarEditor(id, nomeLado, aoMudar) {
     function lado() { var i = buscar(id); return i ? i[nomeLado] : null; }
+    var outroNome = nomeLado === 'antes' ? 'depois' : 'antes';
+    function outro() { var i = buscar(id); return i ? i[outroNome] : null; }
+    var chavePilha = id + '|' + nomeLado;
+    var pilha = pilhas[chavePilha] || (pilhas[chavePilha] = []);
     var img = h('img', { alt: '', class: 'foto-edicao', attrs: { draggable: 'false' } });
-    var quadro = h('div', { class: 'quadro', id: 'quadro-edicao', attrs: { role: 'img', 'aria-label': 'Foto ' + (nomeLado === 'antes' ? 'ANTES' : 'DEPOIS') + '. Arraste para mover. Use dois dedos para aumentar.' } }, img);
+    var imgOutra = h('img', { alt: '', class: 'foto-sobreposta', id: 'foto-sobreposta', attrs: { draggable: 'false' } });
+    imgOutra.hidden = !S.sobrepor;
+    var quadro = h('div', { class: 'quadro', id: 'quadro-edicao', attrs: { role: 'img', 'aria-label': 'Foto ' + (nomeLado === 'antes' ? 'ANTES' : 'DEPOIS') + '. Arraste para mover. Use dois dedos para aumentar.' } }, img, imgOutra);
     var rotuloZoom = h('p', { class: 'zoom-valor', id: 'zoom-valor', attrs: { role: 'status' } });
     var faixa = h('input', { type: 'range', id: 'zoom', attrs: { min: '100', step: '1', 'aria-label': 'Zoom da foto' } });
     var menos = h('button', { class: 'botao', type: 'button', id: 'zoom-menos', text: '−', attrs: { 'aria-label': 'Diminuir a foto' } });
     var mais = h('button', { class: 'botao', type: 'button', id: 'zoom-mais', text: '+', attrs: { 'aria-label': 'Aumentar a foto' } });
     var auto = h('button', { class: 'botao botao-leve', type: 'button', id: 'voltar-auto', text: 'Voltar ao automático' });
+    var desfazer = h('button', { class: 'botao botao-leve', type: 'button', id: 'desfazer-ajuste', text: 'Desfazer ajuste' });
+    var sobrepor = h('button', { class: 'botao botao-leve', type: 'button', id: 'sobrepor', text: 'Sobrepor a outra foto', attrs: { 'aria-pressed': S.sobrepor ? 'true' : 'false' } });
+    var faixaTransp = h('input', { type: 'range', id: 'sobrepor-transp', attrs: { min: '0', max: '100', step: '5', value: String(S.transp), 'aria-label': 'Transparência da outra foto' } });
+    var rotuloTransp = h('span', { class: 'transp-valor', id: 'sobrepor-valor' });
+    var caixaTransp = h('div', { class: 'sobrepor-controle', id: 'sobrepor-controle' },
+      h('label', { class: 'rotulo-transp', text: 'Transparência da outra foto', attrs: { for: 'sobrepor-transp' } }),
+      h('div', { class: 'zoom-linha' }, faixaTransp, rotuloTransp));
+    caixaTransp.hidden = !S.sobrepor;
+
+    function pintarSobreposta() {
+      var o = outro();
+      imgOutra.hidden = !S.sobrepor || !o;
+      caixaTransp.hidden = !S.sobrepor || !o;
+      sobrepor.setAttribute('aria-pressed', S.sobrepor ? 'true' : 'false');
+      sobrepor.textContent = S.sobrepor ? 'Tirar a outra foto de cima' : 'Sobrepor a outra foto';
+      rotuloTransp.textContent = S.transp + '%';
+      faixaTransp.value = String(S.transp);
+      if (!o) return;
+      if (imgOutra.getAttribute('data-arq') !== o.arquivo) { imgOutra.src = urlFoto(o.arquivo); imgOutra.setAttribute('data-arq', o.arquivo); }
+      aplicarEnq(imgOutra, enqEfetivo(o));
+      // transparência 0% = a outra foto aparece inteira; 100% = não aparece
+      imgOutra.style.opacity = String((100 - S.transp) / 100);
+    }
+    sobrepor.addEventListener('click', function () { S.sobrepor = !S.sobrepor; pintarSobreposta(); });
+    faixaTransp.addEventListener('input', function () { S.transp = Number(faixaTransp.value); pintarSobreposta(); });
 
     function pintar() {
       var l = lado();
@@ -1068,21 +1108,38 @@
       faixa.value = String(Math.round(zoomAtual(l) * 100));
       rotuloZoom.textContent = 'Zoom: ' + Math.round(zoomAtual(l) * 100) + '%' + (l.enquadramento && l.enquadramento.automatico ? ' (automático)' : '');
       auto.disabled = !!(l.enquadramento && l.enquadramento.automatico);
+      desfazer.disabled = pilha.length === 0;
+      pintarSobreposta();
     }
     function mexeu() { pintar(); aoMudar(); }
-    function zoomPara(z) {
+
+    // Cada arraste ou zoom vira um passo do Desfazer. Um gesto contínuo (arrastar, mexer na barra) conta como um passo só.
+    var emGesto = false;
+    function ajustar(fn, agrupar) {
       var l = lado();
       if (!l) return;
-      aplicarZoom(l, z);
+      var antes = copia(enqEfetivo(l));
+      fn(l);
+      var mudouDeVerdade = JSON.stringify(antes) !== JSON.stringify(enqEfetivo(l));
+      if (mudouDeVerdade && !(agrupar && emGesto)) {
+        pilha.push(antes);
+        while (pilha.length > PASSOS_MAX) pilha.shift();
+      }
+      if (agrupar && mudouDeVerdade) emGesto = true;
       mexeu();
     }
-    faixa.addEventListener('input', function () { zoomPara(Number(faixa.value) / 100); });
+    function zoomPara(z, agrupar) { ajustar(function (l) { aplicarZoom(l, z); }, agrupar); }
+    faixa.addEventListener('input', function () { zoomPara(Number(faixa.value) / 100, true); });
+    faixa.addEventListener('change', function () { emGesto = false; });
     menos.addEventListener('click', function () { var l = lado(); if (l) zoomPara(zoomAtual(l) - 0.1); });
     mais.addEventListener('click', function () { var l = lado(); if (l) zoomPara(zoomAtual(l) + 0.1); });
     auto.addEventListener('click', function () {
+      ajustar(function (l) { l.enquadramento = enqAuto(l.largura, l.altura); });
+    });
+    desfazer.addEventListener('click', function () {
       var l = lado();
-      if (!l) return;
-      l.enquadramento = enqAuto(l.largura, l.altura);
+      if (!l || !pilha.length) return;
+      l.enquadramento = enqLimitar(pilha.pop());
       mexeu();
     });
 
@@ -1101,6 +1158,7 @@
       if (contar2() === 2) {
         var l = lado();
         pinca = { d: Math.max(distancia(), 1), z: l ? zoomAtual(l) : 1 };
+        emGesto = false;
       }
       quadro.classList.add('mexendo');
       ev.preventDefault();
@@ -1111,26 +1169,26 @@
       if (!p || !l) return;
       if (contar2() === 1) {
         var r = quadro.getBoundingClientRect();
-        var e = enqEfetivo(l);
-        l.enquadramento = enqLimitar({
-          width: e.width, height: e.height,
-          left: e.left + (ev.clientX - p.x) / r.width * 100,
-          top: e.top + (ev.clientY - p.y) / r.height * 100,
-          automatico: false
-        });
+        ajustar(function (l2) {
+          var e = enqEfetivo(l2);
+          l2.enquadramento = enqLimitar({
+            width: e.width, height: e.height,
+            left: e.left + (ev.clientX - p.x) / r.width * 100,
+            top: e.top + (ev.clientY - p.y) / r.height * 100,
+            automatico: false
+          });
+        }, true);
         dedos[ev.pointerId] = { x: ev.clientX, y: ev.clientY };
-        mexeu();
       } else if (contar2() === 2 && pinca) {
         dedos[ev.pointerId] = { x: ev.clientX, y: ev.clientY };
-        aplicarZoom(l, pinca.z * distancia() / pinca.d);
-        mexeu();
+        ajustar(function (l2) { aplicarZoom(l2, pinca.z * distancia() / pinca.d); }, true);
       }
       ev.preventDefault();
     });
     function soltou(ev) {
       delete dedos[ev.pointerId];
       pinca = null;
-      if (contar2() === 0) quadro.classList.remove('mexendo');
+      if (contar2() === 0) { quadro.classList.remove('mexendo'); emGesto = false; }
     }
     quadro.addEventListener('pointerup', soltou);
     quadro.addEventListener('pointercancel', soltou);
@@ -1142,7 +1200,10 @@
       h('p', { class: 'dica', text: 'Arraste com um dedo para mover a foto. Use dois dedos para aumentar ou diminuir.' }),
       h('div', { class: 'zoom-linha' }, menos, faixa, mais),
       rotuloZoom,
-      auto);
+      h('div', { class: 'linha-botoes botoes-editor' }, desfazer, auto),
+      h('p', { class: 'dica', text: 'Para alinhar com a outra foto, ponha ela por cima, meio transparente, e confira o umbigo ou o nariz.' }),
+      sobrepor,
+      caixaTransp);
     return { el: el, pintar: pintar };
   }
 
@@ -1210,6 +1271,7 @@
       corpo.appendChild(h('button', { class: 'botao botao-bloco', type: 'button', id: 'trocar-foto', text: 'Trocar esta foto', on: { click: function () {
         pedirMidia('foto', progresso, function (r) {
           var velho = item[lado] || {};
+          limparPilhas(item.id + '|' + lado);
           item[lado] = { arquivo: r.arquivo, largura: r.largura, altura: r.altura, alt: velho.alt || (nomeItem(item) + ' — ' + lado + ' do tratamento'), enquadramento: enqAuto(r.largura, r.altura) };
           mudou('Trocou a foto de ' + nomeItem(item));
           desenhar();
@@ -1287,7 +1349,7 @@
         S.rev = r.revisao;
         S.sujo = false;
         S.resumo = [];
-        S.apagados = [];
+        S.apagados = []; limparPilhas();
         desenhar();
         toast(aviso, { texto: 'Desfazer', fazer: function () { restaurarVersao(revAntes, 'Desfeito. O site voltou ao que estava antes.'); } }, 10);
       } else {

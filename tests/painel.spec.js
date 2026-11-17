@@ -401,6 +401,71 @@ test.describe('P2 resultados e enquadramento', () => {
     quase(it.depois.enquadramento.width, 100, 0.001);
   });
 
+  test('V4: Sobrepor a outra foto (50% por padrão, com controle) e o formato salvo não muda', async ({ page }) => {
+    await entrar(page);
+    await abrirItem(page, 'cmp-liposhape-1');
+    await expect(page.locator('#foto-sobreposta')).toBeHidden();
+    await expect(page.locator('#sobrepor-controle')).toBeHidden();
+    await page.click('#sobrepor');
+    await expect(page.locator('#sobrepor')).toHaveAttribute('aria-pressed', 'true');
+    await expect(page.locator('#foto-sobreposta')).toBeVisible();
+    await expect(page.locator('#sobrepor-transp')).toHaveValue('50');
+    expect(Number(await page.locator('#foto-sobreposta').evaluate((e) => getComputedStyle(e).opacity))).toBeCloseTo(0.5, 2);
+    await page.locator('#sobrepor-transp').fill('80');
+    expect(Number(await page.locator('#foto-sobreposta').evaluate((e) => getComputedStyle(e).opacity))).toBeCloseTo(0.2, 2);
+    await expect(page.locator('#sobrepor-valor')).toHaveText('80%');
+    // sobrepor não é mudança no conteúdo: nada a salvar
+    await expect(page.locator('#salvar')).toBeDisabled();
+    await page.click('#zoom-mais');
+    await page.click('#salvar');
+    await expect(page.locator('.toast')).toContainText('Salvo no site');
+    const lido = await chamar(page, { acao: 'ler' });
+    const it = lido.conteudo.resultados.itens.find((x) => x.id === 'cmp-liposhape-1');
+    for (const lado of ['antes', 'depois']) {
+      expect(Object.keys(it[lado].enquadramento).sort()).toEqual(['automatico', 'height', 'left', 'top', 'width']);
+    }
+    await page.click('#sobrepor');
+    await expect(page.locator('#foto-sobreposta')).toBeHidden();
+  });
+
+  test('V4: Desfazer ajuste guarda pelo menos 20 passos', async ({ page }) => {
+    await entrar(page);
+    await abrirItem(page, 'cmp-liposhape-1');
+    await page.click('#aba-antes');
+    await expect(page.locator('#desfazer-ajuste')).toBeDisabled();
+    const z0 = Number(await page.locator('#zoom').inputValue());
+    const max = Number(await page.locator('#zoom').getAttribute('max'));
+    const passos = Math.min(25, Math.floor((max - z0) / 10));
+    expect(passos).toBeGreaterThanOrEqual(1);
+    for (let i = 0; i < passos; i++) await page.click('#zoom-mais');
+    await expect(page.locator('#desfazer-ajuste')).toBeEnabled();
+    for (let i = 0; i < passos; i++) await page.click('#desfazer-ajuste');
+    await expect(page.locator('#desfazer-ajuste')).toBeDisabled();
+    expect(Number(await page.locator('#zoom').inputValue())).toBe(z0);
+  });
+
+  test('V4: Desfazer ajuste volta 20 passos de arrastar e de +/-', async ({ page }) => {
+    await entrar(page);
+    await abrirItem(page, 'cmp-liposhape-1');
+    await page.click('#aba-antes');
+    const base = await posicaoFoto(page, '#quadro-edicao img', '#quadro-edicao');
+    for (let i = 0; i < 4; i++) await page.click('#zoom-mais');
+    // 21 arrastes separados: cada um é um passo
+    for (let i = 0; i < 21; i++) {
+      const dx = i % 2 ? 0.52 : 0.48;
+      await gesto(page, [{ t: 'pointerdown', id: 1, x: 0.5, y: 0.5 }, { t: 'pointermove', id: 1, x: dx, y: 0.5 }, { t: 'pointerup', id: 1, x: dx, y: 0.5 }]);
+    }
+    const fim = await posicaoFoto(page, '#quadro-edicao img', '#quadro-edicao');
+    expect(Math.abs(fim.w - base.w)).toBeGreaterThan(0.01);
+    let desfeitos = 0;
+    while (await page.locator('#desfazer-ajuste').isEnabled()) { await page.click('#desfazer-ajuste'); desfeitos++; }
+    expect(desfeitos).toBeGreaterThanOrEqual(20);
+    const volta = await posicaoFoto(page, '#quadro-edicao img', '#quadro-edicao');
+    quase(volta.l, base.l, 0.002);
+    quase(volta.t, base.t, 0.002);
+    quase(volta.w, base.w, 0.002);
+  });
+
   test('mudar a ordem na página inicial', async ({ page }) => {
     await entrar(page);
     await page.click('#cartao-resultados');
