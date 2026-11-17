@@ -677,3 +677,22 @@ function midia_poster_salvar(string $tmp): array
 {
     return midia_foto_salvar($tmp, 'poster.jpg', 1600);
 }
+
+/**
+ * Apaga um vídeo que acabou de ser montado mas não foi usado (por exemplo, a capa falhou).
+ * Só apaga .mp4 no formato do painel e que o conteúdo atual NÃO usa.
+ */
+function midia_descartar(string $arquivo): array
+{
+    $caminho = midia_caminho($arquivo);
+    if ($caminho === null || substr($caminho, -4) !== '.mp4') {
+        return midia_erro('arquivo_invalido');
+    }
+    if (in_array($arquivo, conteudo_midias_usadas(conteudo_ler()), true)) {
+        return midia_erro('arquivo_em_uso');
+    }
+    if (is_file($caminho)) {
+        @unlink($caminho);
+    }
+    return [];
+}

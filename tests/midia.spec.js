@@ -306,7 +306,10 @@ test.describe('L10 / T13 vídeo', () => {
 
   test('HEVC é recusado com a frase do iPhone', async ({ page, context, baseURL }) => {
     await abrir(page, context, baseURL);
+    let pedidos = 0;
+    page.on('request', (rq) => { if (rq.url().includes('api-midia')) pedidos++; });
     const r = await enviar(page, '#v', path.join(FIX, 'video-hevc.mp4'));
+    expect(pedidos, 'recusado no aparelho, sem gastar internet').toBe(0);
     expect(r.ok).toBe(false);
     expect(r.codigo).toBe('hevc');
     expect(r.mensagem).toContain('Mais compatível');
@@ -315,7 +318,10 @@ test.describe('L10 / T13 vídeo', () => {
 
   test('vídeo 4K é recusado e a frase manda gravar em 1080p', async ({ page, context, baseURL }) => {
     await abrir(page, context, baseURL);
+    let pedidos = 0;
+    page.on('request', (rq) => { if (rq.url().includes('api-midia')) pedidos++; });
     const r = await enviar(page, '#v', path.join(FIX, 'video-4k.mp4'));
+    expect(pedidos, 'recusado no aparelho, sem gastar internet').toBe(0);
     expect(r.ok).toBe(false);
     expect(r.codigo).toBe('grande_demais');
     expect(r.mensagem).toContain('1080p');
@@ -327,6 +333,17 @@ test.describe('L10 / T13 vídeo', () => {
     const r = await enviar(page, '#v', path.join(FIX, 'video-1080-girado.mp4'));
     expect(r.ok, JSON.stringify(r)).toBe(true);
     expect([r.largura, r.altura]).toEqual([1080, 1920]);
+  });
+
+  test('se a capa não puder ser tirada, o vídeo nem sobe e a frase explica', async ({ page, context, baseURL }) => {
+    await abrir(page, context, baseURL);
+    let pedidos = 0;
+    page.on('request', (rq) => { if (rq.url().includes('api-midia')) pedidos++; });
+    const r = await enviar(page, '#v', path.join(FIX, 'audio-sem-video.mp4'));
+    expect(r.ok).toBe(false);
+    expect(r.codigo).toBe('poster_falhou');
+    expect(r.mensagem).toContain('capa');
+    expect(pedidos).toBe(0);
   });
 
   test('vídeo de mais de 250 MB é recusado antes de subir, com os números na frase', async ({ page, context, baseURL }) => {

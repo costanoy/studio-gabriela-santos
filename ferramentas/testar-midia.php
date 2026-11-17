@@ -344,6 +344,13 @@ touch($tmp . '/dados/envios/' . $velho['envio'], time() - 90000);
 midia_video_iniciar(2 * 1024 * 1024, 'novo.mp4');
 t(!is_dir($tmp . '/dados/envios/' . $velho['envio']), 'envio parado há mais de um dia é apagado');
 
+// P1-2: vídeo montado mas não usado (capa falhou) é descartado; nada fora do formato é apagado
+$d1 = midia_descartar($fim['arquivo']);
+t(!isset($d1['erro']) && !is_file(caminho_saida($tmp, $fim['arquivo'])), 'descartar apaga o vídeo que sobrou');
+t((midia_descartar('conteudo/midia/../../x.mp4')['erro'] ?? '') === 'arquivo_invalido', 'descartar recusa caminho com ..');
+t((midia_descartar('conteudo/midia/2026/aaaaaaaaaaaaaaaa.jpg')['erro'] ?? '') === 'arquivo_invalido', 'descartar só aceita .mp4');
+t((midia_descartar('assets/results/a.mp4')['erro'] ?? '') === 'arquivo_invalido', 'descartar não mexe em assets/');
+
 echo "\n";
 limpar_pasta($tmp);
 config_definir(null);

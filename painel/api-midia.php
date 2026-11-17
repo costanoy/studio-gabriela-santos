@@ -99,6 +99,9 @@ switch ($acao) {
         midia_envio_apagar((string) ($entrada['envio'] ?? ''));
         resposta_midia([]);
 
+    case 'video_descartar':
+        resposta_midia(midia_descartar((string) ($entrada['arquivo'] ?? '')));
+
     case 'poster':
         $f = arquivo_recebido('arquivo');
         if ($f === null) {

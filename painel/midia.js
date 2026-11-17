@@ -59,7 +59,7 @@
     video_ilegivel: 'Não consegui ler este vídeo. Ele pode estar estragado. Escolha outro ou grave de novo.',
     rede: 'A internet caiu no meio do envio. Nada foi mudado no site. Toque em "Tentar de novo".',
     cancelado: 'Envio cancelado. Nada foi mudado no site.',
-    poster_falhou: 'Não consegui tirar a capa deste vídeo. Tente de novo ou escolha outro vídeo.',
+    poster_falhou: 'Não consegui tirar a capa deste vídeo, então ele não foi enviado. Escolha outro vídeo ou grave de novo pela câmera do celular, com a opção Mais compatível.',
     envio_nao_encontrado: 'Este envio ficou parado por muito tempo e não pode continuar. Escolha o vídeo de novo.',
     parte_invalida: 'Um pedaço do vídeo não chegou direito. Toque em "Tentar de novo".',
     partes_faltando: 'Faltou um pedaço do vídeo. Toque em "Tentar de novo".',
@@ -339,16 +339,60 @@
   /* ------------------------------------------------------------------ vídeo */
 
   var LADO_CAPA = 1280;
+  var PRETO_LUMINANCIA = 6;       // media abaixo disto (0 a 255) numa amostra de 16x16 = quadro praticamente preto
+  var ESPERA_QUADRO_MS = 1500;    // seguranca: se o navegador nao avisar que o quadro chegou, desenha mesmo assim
+
+  /** Vai para o quadro 0 (0,001 s) e avisa quando ele esta pronto para desenhar. No iPhone, desenhar direto no loadeddata sai preto. */
+  function irAoQuadroZero(v, depois) {
+    var acabou = false;
+    var t = null;
+    var pronto = function () {
+      if (acabou) { return; }
+      acabou = true;
+      clearTimeout(t);
+      v.removeEventListener('seeked', aoBuscar);
+      depois();
+    };
+    var aoBuscar = function () {
+      v.removeEventListener('seeked', aoBuscar);
+      if (typeof v.requestVideoFrameCallback === 'function') {
+        try { v.requestVideoFrameCallback(function () { pronto(); }); } catch (e) { pronto(); }
+      } else {
+        pronto();
+      }
+    };
+    t = setTimeout(pronto, ESPERA_QUADRO_MS);
+    v.addEventListener('seeked', aoBuscar);
+    try { v.currentTime = 0.001; } catch (e) { pronto(); }
+  }
+
+  /** true se o quadro desenhado e praticamente todo preto (media de luminancia muito baixa numa amostra pequena). */
+  function quadroPreto(canvas) {
+    try {
+      var p = document.createElement('canvas');
+      p.width = 16;
+      p.height = 16;
+      var x = p.getContext('2d');
+      x.drawImage(canvas, 0, 0, 16, 16);
+      var d = x.getImageData(0, 0, 16, 16).data;
+      var soma = 0;
+      for (var i = 0; i < d.length; i += 4) { soma += 0.2126 * d[i] + 0.7152 * d[i + 1] + 0.0722 * d[i + 2]; }
+      return soma / (d.length / 4) < PRETO_LUMINANCIA;
+    } catch (e) { return false; }
+  }
 
   /**
-   * Capa do vídeo = o PRIMEIRO quadro (tempo 0). Isso evita a tela preta do iPhone antes do play.
-   * Devolve {blob, largura, altura, duracao}. Se o navegador não consegue decodificar o vídeo, rejeita.
+   * Capa do video = o PRIMEIRO quadro (tempo 0). Isso evita a tela preta do iPhone antes do play.
+   * Depois do loadeddata busca 0,001 s, espera o seeked (e o quadro, quando o navegador avisa) e so entao desenha.
+   * Se saiu preto, tenta mais uma vez depois de um play/pause mudo. Se mesmo assim sair preto, o video e escuro de verdade.
+   * Devolve {blob, largura, altura, duracao}. Se o navegador nao consegue decodificar o video, rejeita.
    */
   function capaDoVideo(file) {
     return new Promise(function (resolve, reject) {
       var url = URL.createObjectURL(file);
       var v = document.createElement('video');
       var acabou = false;
+      var limite = null;
       var fim = function (fn, valor) {
         if (acabou) { return; }
         acabou = true;
@@ -358,30 +402,155 @@
         URL.revokeObjectURL(url);
         fn(valor);
       };
-      var limite = setTimeout(function () { fim(reject, new Error('tempo')); }, 20000);
+      limite = setTimeout(function () { fim(reject, new Error('tempo')); }, 20000);
       v.muted = true;
       v.defaultMuted = true;
       v.playsInline = true;
       v.setAttribute('playsinline', '');
       v.preload = 'auto';
       v.addEventListener('error', function () { fim(reject, new Error('decodificar')); });
+
+      var desenhar = function () {
+        var w = v.videoWidth, h = v.videoHeight;
+        if (!w || !h) { throw new Error('vazio'); }
+        var esc = Math.min(1, LADO_CAPA / Math.max(w, h));
+        var c = document.createElement('canvas');
+        c.width = Math.max(1, Math.round(w * esc));
+        c.height = Math.max(1, Math.round(h * esc));
+        c.getContext('2d').drawImage(v, 0, 0, c.width, c.height);
+        return c;
+      };
+      var entregar = function (c) {
+        var w = v.videoWidth, h = v.videoHeight;
+        var duracao = isFinite(v.duration) ? v.duration : 0;
+        c.toBlob(function (b) {
+          if (b) { fim(resolve, { blob: b, largura: w, altura: h, duracao: duracao }); } else { fim(reject, new Error('canvas')); }
+        }, 'image/jpeg', 0.88);
+      };
+
       v.addEventListener('loadeddata', function () {
-        try {
-          var w = v.videoWidth, h = v.videoHeight;
-          if (!w || !h) { throw new Error('vazio'); }
-          var duracao = isFinite(v.duration) ? v.duration : 0;
-          var esc = Math.min(1, LADO_CAPA / Math.max(w, h));
-          var c = document.createElement('canvas');
-          c.width = Math.max(1, Math.round(w * esc));
-          c.height = Math.max(1, Math.round(h * esc));
-          c.getContext('2d').drawImage(v, 0, 0, c.width, c.height);
-          c.toBlob(function (b) {
-            if (b) { fim(resolve, { blob: b, largura: w, altura: h, duracao: duracao }); } else { fim(reject, new Error('canvas')); }
-          }, 'image/jpeg', 0.88);
-        } catch (e) { fim(reject, e); }
+        var tentouDeNovo = false;
+        var tentar = function () {
+          irAoQuadroZero(v, function () {
+            try {
+              var c = desenhar();
+              if (!tentouDeNovo && quadroPreto(c)) {
+                tentouDeNovo = true;
+                // play/pause mudo faz o iOS decodificar um quadro de verdade; depois volta ao quadro 0
+                var voltar = function () {
+                  try { v.pause(); } catch (e) { /* ok */ }
+                  tentar();
+                };
+                var p = null;
+                try { p = v.play(); } catch (e) { p = null; }
+                if (p && typeof p.then === 'function') { p.then(voltar, voltar); } else { setTimeout(voltar, 150); }
+                return;
+              }
+              entregar(c);
+            } catch (e) { fim(reject, e); }
+          });
+        };
+        tentar();
       });
       v.src = url;
     });
+  }
+
+  /* ------------------------------------------------------------------ olhar o MP4 antes de enviar */
+
+  var CODECS_HEVC = ['hvc1', 'hev1', 'dvh1', 'dvhe'];
+  var CODECS_VIDEO = ['avc1', 'avc3', 'hvc1', 'hev1', 'dvh1', 'dvhe', 'av01', 'vp09', 'mp4v', 'apcn', 'apch'];
+  var CONTAINERS_MP4 = ['moov', 'trak', 'mdia', 'minf', 'stbl'];
+
+  function lerBytes(blob) {
+    return new Promise(function (resolve, reject) {
+      var r = new FileReader();
+      r.onload = function () { resolve(new Uint8Array(r.result)); };
+      r.onerror = function () { reject(r.error); };
+      r.readAsArrayBuffer(blob);
+    });
+  }
+
+  function texto4(b, i) { return String.fromCharCode(b[i], b[i + 1], b[i + 2], b[i + 3]); }
+  function u32(b, i) { return ((b[i] << 24) | (b[i + 1] << 16) | (b[i + 2] << 8) | b[i + 3]) >>> 0; }
+
+  /** Anda pelas caixas de um trecho do MP4. cb(tipo, inicioDoConteudo, fim). */
+  function caixas(b, ini, fim, cb) {
+    var p = ini;
+    var n = 0;
+    while (p + 8 <= fim && n++ < 500) {
+      var t = u32(b, p);
+      var tipo = texto4(b, p + 4);
+      var cab = 8;
+      if (t === 1 && p + 16 <= fim) { t = u32(b, p + 12); cab = 16; } else if (t === 0) { t = fim - p; }
+      if (t < cab || p + t > fim) { return; }
+      cb(tipo, p + cab, p + t);
+      p += t;
+    }
+  }
+
+  /** Le o trecho moov e devolve {codec, largura, altura} da faixa de video, ou null. */
+  function infoDoMoov(b) {
+    var achado = null;
+    var faixa = function (ini, fim) {
+      var f = { w: 0, h: 0, codec: '' };
+      var visitar = function (i, e) {
+        caixas(b, i, e, function (tipo, a, z) {
+          if (tipo === 'tkhd') {
+            var off = b[a] === 1 ? 88 : 76;
+            if (a + off + 8 <= z) { f.w = u32(b, a + off) / 65536; f.h = u32(b, a + off + 4) / 65536; }
+          } else if (tipo === 'stsd') {
+            if (a + 16 <= z) { f.codec = texto4(b, a + 12); }
+          } else if (CONTAINERS_MP4.indexOf(tipo) >= 0) {
+            visitar(a, z);
+          }
+        });
+      };
+      visitar(ini, fim);
+      if (CODECS_VIDEO.indexOf(f.codec) >= 0 && !achado) {
+        achado = { codec: f.codec, largura: Math.round(f.w), altura: Math.round(f.h) };
+      }
+    };
+    caixas(b, 0, b.length, function (tipo, a, z) {
+      if (tipo === 'moov') {
+        caixas(b, a, z, function (t2, a2, z2) { if (t2 === 'trak') { faixa(a2, z2); } });
+      }
+    });
+    return achado;
+  }
+
+  /**
+   * Espia o MP4 sem decodificar: codec e tamanho da faixa de video. Nunca rejeita:
+   * se nao deu para ler (arquivo diferente, moov muito grande), devolve null e o servidor decide.
+   */
+  function olharMp4(file) {
+    return new Promise(function (resolve) {
+      var pos = 0;
+      var voltas = 0;
+      var proxima = function () {
+        if (pos + 16 > file.size || voltas++ > 100) { resolve(null); return; }
+        lerBytes(file.slice(pos, pos + 16)).then(function (c) {
+          var t = u32(c, 0);
+          var tipo = texto4(c, 4);
+          if (t === 1) { t = u32(c, 12); } else if (t === 0) { t = file.size - pos; }
+          if (pos === 0 && tipo !== 'ftyp') { resolve(null); return; }
+          if (t < 8) { resolve(null); return; }
+          if (tipo !== 'moov') { pos += t; proxima(); return; }
+          if (t > 32 * 1048576 || pos + t > file.size) { resolve(null); return; }
+          lerBytes(file.slice(pos, pos + t)).then(function (b) {
+            var r = null;
+            try { r = infoDoMoov(b); } catch (e) { r = null; }
+            resolve(r);
+          }, function () { resolve(null); });
+        }, function () { resolve(null); });
+      };
+      proxima();
+    });
+  }
+
+  /** Mesma regra do servidor: lado curto ate 1088 e lado longo ate 1920 (Full HD, em pe ou deitado). */
+  function grandeDemais(l, a) {
+    return Math.min(l, a) > 1088 || Math.max(l, a) > 1920;
   }
 
   function minutos(seg) {
@@ -433,6 +602,16 @@
       if (!/^video\//i.test(file.type || '') && !/\.(mp4|mov|m4v)$/i.test(file.name || '')) { throw erro('tipo'); }
       if (file.size > LIMITE_VIDEO_MB * 1048576) { throw erro('video_pesado', { tamanho_mb: mb(file.size), limite_mb: LIMITE_VIDEO_MB }); }
 
+      // Olha o MP4 antes de abrir a janela e antes de gastar internet: HEVC e acima de 1080p são recusados aqui.
+      return olharMp4(file).then(function (info) {
+        if (info && CODECS_HEVC.indexOf(info.codec) >= 0) { throw erro('hevc'); }
+        if (info && grandeDemais(info.largura, info.altura)) { throw erro('grande_demais', { largura: info.largura, altura: info.altura }); }
+        return enviarVideo(file, op);
+      });
+    });
+  }
+
+  function enviarVideo(file, op) {
       var janela = abrirJanela('Seu vídeo');
       var ctl = { xhr: null, cancelado: false };
       var envio = null;
@@ -444,8 +623,9 @@
       janela.texto('Abrindo o vídeo…');
       janela.botoes([{ rotulo: 'Cancelar', acao: cancelarTudo }]);
 
-      return capaDoVideo(file).then(function (c) { return c; }, function () { return null; }).then(function (capa) {
+      return capaDoVideo(file).then(function (c) { return c; }, function () { throw erro('poster_falhou'); }).then(function (capa) {
         if (ctl.cancelado) { throw erro('cancelado'); }
+        if (grandeDemais(capa.largura, capa.altura)) { throw erro('grande_demais', { largura: capa.largura, altura: capa.altura }); }
         // 1. Prévia: capa, duração e tamanho. A pessoa confirma antes de gastar internet.
         var previa = capa ? URL.createObjectURL(capa.blob) : '';
         janela.capa(previa);
@@ -517,11 +697,15 @@
         return tentar().then(function (j) {
           lembrar(file, '');
           // 3. Capa (primeiro quadro)
-          if (!capa) { throw erro('poster_falhou'); }
           janela.texto('Guardando a capa…');
+          // Se a capa não for guardada, o vídeo já montado no servidor ficaria sobrando: apaga.
+          var descartar = function (e) {
+            var erroFinal = e.codigo === 'rede' ? erro('poster_falhou') : e;
+            return chamar(op, { acao: 'video_descartar', arquivo: j.arquivo }, null).then(function () { throw erroFinal; }, function () { throw erroFinal; });
+          };
           return chamar(op, { acao: 'poster', arquivo: { blob: capa.blob, nome: 'capa.jpg' } }, ctl).then(function (p) {
             return { arquivo: j.arquivo, poster: p.arquivo, largura: j.largura, altura: j.altura, duracao: j.duracao };
-          }, function (e) { throw e.codigo === 'rede' ? erro('poster_falhou') : e; });
+          }, descartar);
         });
       }).then(function (r) {
         janela.fechar();
@@ -536,7 +720,6 @@
         }
         return sair(e);
       });
-    });
   }
 
   window.PainelMidia = {
