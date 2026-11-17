@@ -395,6 +395,28 @@ $cv['resultados']['itens'][0]['antes']['arquivo'] = 'conteudo/midia/foto-solta.w
 t(count(array_filter(conteudo_validar($cv), fn($e) => $e['campo'] === 'resultados.itens.0.antes.arquivo')) === 1, 'a validação recusa nome fora do formato');
 $cv['resultados']['itens'][0]['antes']['arquivo'] = $FA;
 t(!array_filter(conteudo_validar($cv), fn($e) => $e['campo'] === 'resultados.itens.0.antes.arquivo'), 'a validação aceita o formato certo');
+// P2-3: campos que a dona não edita também são conferidos no servidor
+echo "\nP2-3 campos não editáveis\n";
+$campos_ruins = function (callable $mexe): array {
+    $x = conteudo_padrao();
+    $mexe($x);
+    return array_column(conteudo_validar($x), 'campo');
+};
+t(conteudo_validar(conteudo_padrao()) === [], 'o conteúdo padrão continua válido');
+t(in_array('contato.maps_link', $campos_ruins(function (&$x) { $x['contato']['maps_link'] = 'javascript:alert(1)'; }), true), 'link do mapa com javascript: é recusado');
+t(in_array('contato.maps_link', $campos_ruins(function (&$x) { $x['contato']['maps_link'] = 'http://maps.app.goo.gl/x'; }), true), 'link do mapa só aceita https://');
+t(in_array('contato.avaliacao_online', $campos_ruins(function (&$x) { $x['contato']['avaliacao_online'] = 'data:text/html,x'; }), true), 'link de avaliação com data: é recusado');
+t(in_array('contato.maps_embed', $campos_ruins(function (&$x) { $x['contato']['maps_embed'] = 'https://exemplo.com/maps'; }), true), 'mapa da página só aceita https://www.google.com/maps');
+t(in_array('contato.maps_embed', $campos_ruins(function (&$x) { $x['contato']['maps_embed'] = 'https://www.google.com.evil.com/maps'; }), true), 'mapa de domínio parecido é recusado');
+t(in_array('contato.geo.lat', $campos_ruins(function (&$x) { $x['contato']['geo']['lat'] = 'abc'; }), true), 'latitude que não é número é recusada');
+t(in_array('contato.instagram_usuario', $campos_ruins(function (&$x) { $x['contato']['instagram_usuario'] = 'a"><script>'; }), true), 'usuário do Instagram com símbolos é recusado');
+t(in_array('seo.url_base', $campos_ruins(function (&$x) { $x['seo']['url_base'] = 'ftp://x'; }), true), 'endereço do site só aceita https://');
+t(in_array('seo.titulo', $campos_ruins(function (&$x) { $x['seo']['titulo'] = ['lista']; }), true), 'título do Google que não é texto é recusado');
+t(in_array('marca.logo_icone.largura', $campos_ruins(function (&$x) { $x['marca']['logo_icone']['largura'] = 'grande'; }), true), 'largura do logotipo que não é número é recusada');
+t(in_array('marca.logo_texto.arquivo', $campos_ruins(function (&$x) { $x['marca']['logo_texto']['arquivo'] = '../../etc/passwd'; }), true), 'logotipo com .. é recusado');
+t(in_array('resultados.itens.0.na_home', $campos_ruins(function (&$x) { $x['resultados']['itens'][0]['na_home'] = 'sim'; }), true), 'na_home que não é verdadeiro/falso é recusado');
+t(in_array('home.hero.imagem.altura', $campos_ruins(function (&$x) { $x['home']['hero']['imagem']['altura'] = null; }), true), 'altura da imagem do topo ausente é recusada');
+
 config_definir(null);
 conteudo_cache_limpar();
 

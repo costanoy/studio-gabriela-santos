@@ -403,6 +403,120 @@ function conteudo_validar(array $c): array
         }
     }
 
+    // Campos que a dona não edita (ficam no arquivo e vão para links, mapa e dados do Google).
+    // O servidor confere o tipo de cada um: um valor trocado à mão nunca chega à página inicial.
+    $https = static function ($v, string $campo, string $nome, ?string $prefixo = null) use ($erro): void {
+        $ok = is_string($v) && strlen($v) <= 400 && preg_match('#^https://[^\s<>"\\\\]+$#', $v) === 1
+            && !str_contains($v, "'") && filter_var($v, FILTER_VALIDATE_URL) !== false;
+        if ($ok && $prefixo !== null) {
+            $ok = strncmp($v, $prefixo, strlen($prefixo)) === 0;
+        }
+        if (!$ok) {
+            $erro($campo, "O endereço de $nome precisa começar com https:// e ser um link válido.");
+        }
+    };
+    $inteiro = static function ($v, string $campo, string $nome, int $min = 0, int $max = 20000) use ($erro): void {
+        if (!is_int($v) || $v < $min || $v > $max) {
+            $erro($campo, "O número de $nome é inválido.");
+        }
+    };
+    $logico = static function ($v, string $campo, string $nome) use ($erro): void {
+        if (!is_bool($v)) {
+            $erro($campo, "A opção $nome é inválida.");
+        }
+    };
+    $padrao = static function ($v, string $campo, string $nome, string $regex) use ($erro): void {
+        if (!is_string($v) || preg_match($regex, $v) !== 1) {
+            $erro($campo, "O valor de $nome é inválido.");
+        }
+    };
+
+    $padrao($ct['instagram_usuario'] ?? null, 'contato.instagram_usuario', 'o Instagram', '/^[A-Za-z0-9._]{1,30}$/');
+    $es = $ct['endereco_schema'] ?? null;
+    if (!is_array($es)) {
+        $erro('contato.endereco_schema', 'O endereço para o Google está no formato errado.');
+    } else {
+        $texto($es['rua'] ?? null, 'contato.endereco_schema.rua', 120, 'A rua do endereço do Google');
+        $texto($es['cidade'] ?? null, 'contato.endereco_schema.cidade', 80, 'A cidade do endereço do Google');
+        $padrao($es['uf'] ?? null, 'contato.endereco_schema.uf', 'o estado', '/^[A-Z]{2}$/');
+        $padrao($es['pais'] ?? null, 'contato.endereco_schema.pais', 'o país', '/^[A-Z]{2}$/');
+    }
+    $padrao($ct['horario_schema'] ?? null, 'contato.horario_schema', 'o horário para o Google', '/^[A-Za-z0-9:, -]{1,80}$/');
+    $geo = $ct['geo'] ?? null;
+    foreach (['lat' => 90, 'lng' => 180] as $k => $lim) {
+        $n = is_array($geo) ? ($geo[$k] ?? null) : null;
+        if ((!is_int($n) && !is_float($n)) || abs($n) > $lim) {
+            $erro("contato.geo.$k", 'A localização do mapa é inválida.');
+        }
+    }
+    $https($ct['maps_link'] ?? null, 'contato.maps_link', 'o link do mapa');
+    $https($ct['maps_embed'] ?? null, 'contato.maps_embed', 'o mapa da página', 'https://www.google.com/maps');
+    $https($ct['avaliacao_online'] ?? null, 'contato.avaliacao_online', 'o link de avaliação');
+
+    $seo = $c['seo'] ?? [];
+    foreach (['titulo', 'titulo_resultados', 'og_titulo', 'og_titulo_resultados', 'og_imagem_alt'] as $k) {
+        $texto($seo[$k] ?? null, "seo.$k", 200, 'O texto do Google (' . $k . ')');
+    }
+    foreach (['descricao', 'descricao_resultados', 'og_descricao', 'og_descricao_resultados'] as $k) {
+        $texto($seo[$k] ?? null, "seo.$k", 400, 'O texto do Google (' . $k . ')');
+    }
+    $midia($seo['og_imagem'] ?? null, 'seo.og_imagem', 'a imagem de divulgação');
+    $https($seo['url_base'] ?? null, 'seo.url_base', 'o endereço do site');
+    $texto($c['atualizado_em'] ?? null, 'atualizado_em', 40, 'A data de atualização');
+
+    foreach (['logo_texto', 'logo_icone'] as $k) {
+        $lg = $c['marca'][$k] ?? null;
+        if (!is_array($lg)) {
+            $erro("marca.$k", 'O logotipo está no formato errado.');
+            continue;
+        }
+        $midia($lg['arquivo'] ?? null, "marca.$k.arquivo", 'o logotipo');
+        $inteiro($lg['largura'] ?? null, "marca.$k.largura", 'largura do logotipo');
+        $inteiro($lg['altura'] ?? null, "marca.$k.altura", 'altura do logotipo');
+        $texto($lg['alt'] ?? null, "marca.$k.alt", 160, 'O texto alternativo do logotipo');
+    }
+    $inteiro($h['hero']['imagem']['largura'] ?? null, 'home.hero.imagem.largura', 'largura da imagem do topo');
+    $inteiro($h['hero']['imagem']['altura'] ?? null, 'home.hero.imagem.altura', 'altura da imagem do topo');
+    $texto($h['hero']['botao_principal'] ?? null, 'home.hero.botao_principal', LIMITE_ROTULO, 'O botão principal');
+    $texto($h['hero']['botao_secundario'] ?? null, 'home.hero.botao_secundario', LIMITE_ROTULO, 'O botão secundário');
+    $inteiro($h['sobre']['foto']['largura'] ?? null, 'home.sobre.foto.largura', 'largura da foto de "Sobre"');
+    $inteiro($h['sobre']['foto']['altura'] ?? null, 'home.sobre.foto.altura', 'altura da foto de "Sobre"');
+    $texto($h['sobre']['foto']['alt'] ?? null, 'home.sobre.foto.alt', 160, 'O texto alternativo da foto de "Sobre"', false);
+    $inteiro($h['sobre']['video']['largura'] ?? null, 'home.sobre.video.largura', 'largura do vídeo de "Sobre"');
+    $inteiro($h['sobre']['video']['altura'] ?? null, 'home.sobre.video.altura', 'altura do vídeo de "Sobre"');
+    $texto($h['sobre']['saiba_mais'] ?? null, 'home.sobre.saiba_mais', LIMITE_ROTULO, 'O texto do botão "Saiba mais"');
+    $texto($h['resultados']['rotulo'] ?? null, 'home.resultados.rotulo', LIMITE_ROTULO, 'O rótulo de "Resultados"');
+    $texto($h['resultados']['titulo'] ?? null, 'home.resultados.titulo', LIMITE_TITULO, 'O título de "Resultados"');
+    $texto($h['resultados']['texto_ver_mais'] ?? null, 'home.resultados.texto_ver_mais', LIMITE_ROTULO, 'O texto de "Ver mais"');
+    $texto($h['depoimentos']['rotulo'] ?? null, 'home.depoimentos.rotulo', LIMITE_ROTULO, 'O rótulo de "Depoimentos"');
+    $texto($h['contato_secao']['rotulo'] ?? null, 'home.contato_secao.rotulo', LIMITE_ROTULO, 'O rótulo de "Contato"');
+    $texto($h['contato_secao']['titulo'] ?? null, 'home.contato_secao.titulo', LIMITE_TITULO, 'O título de "Contato"');
+    $texto($r['cta_texto'] ?? null, 'resultados.cta_texto', LIMITE_TITULO, 'O convite da página de resultados');
+    if (is_array($r['categorias'] ?? null) && conteudo_eh_lista($r['categorias'])) {
+        foreach ($r['categorias'] as $n => $cat) {
+            $inteiro($cat['ordem'] ?? null, "resultados.categorias.$n.ordem", 'ordem da categoria', 0, 1000);
+        }
+    }
+    if (is_array($r['itens'] ?? null) && conteudo_eh_lista($r['itens'])) {
+        foreach ($r['itens'] as $n => $x) {
+            $p = "resultados.itens.$n";
+            if (!is_array($x)) {
+                continue;
+            }
+            $logico($x['em_resultados'] ?? null, "$p.em_resultados", 'de aparecer em resultados');
+            $logico($x['na_home'] ?? null, "$p.na_home", 'de aparecer no início');
+            if (($x['tipo'] ?? null) === 'comparacao') {
+                foreach (['antes', 'depois'] as $lado) {
+                    $inteiro($x[$lado]['largura'] ?? null, "$p.$lado.largura", 'largura da foto');
+                    $inteiro($x[$lado]['altura'] ?? null, "$p.$lado.altura", 'altura da foto');
+                    if (is_array($x[$lado]['enquadramento'] ?? null) && array_key_exists('automatico', $x[$lado]['enquadramento'])) {
+                        $logico($x[$lado]['enquadramento']['automatico'], "$p.$lado.enquadramento.automatico", 'de enquadramento automático');
+                    }
+                }
+            }
+        }
+    }
+
     return $erros;
 }
 
