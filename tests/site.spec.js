@@ -280,11 +280,46 @@ test.describe('video da home', () => {
 test.describe('resultados.html', () => {
   test.beforeEach(async ({ page }) => { await page.goto('/resultados.html'); });
 
-  test('carrega, logo troca e voltar', async ({ page }) => {
+  test('carrega, cabecalho sempre solido e voltar', async ({ page }) => {
     await expect(page.locator('h1')).toContainText(/resultados/i);
+    await expect(page.locator('#site-header')).toHaveClass(/scrolled/);
     await page.evaluate(() => window.scrollTo(0, 600));
     await expect(page.locator('#site-header')).toHaveClass(/scrolled/);
     await Promise.all([page.waitForURL(/index\.html|localhost:\d+\/(#.*)?$/), page.locator('#rc-back-link').click()]);
+  });
+
+  test('atalhos de categoria: uma pilula por categoria, de 44 px, levando a ancora', async ({ page }) => {
+    const links = page.locator('nav.atalhos a.atalho');
+    const n = await links.count();
+    const secoes = await page.locator('section.cat').count();
+    expect(n).toBeGreaterThan(1); expect(n).toBe(secoes);
+    for (let i = 0; i < n; i++) {
+      const a = links.nth(i);
+      const href = await a.getAttribute('href'); expect(href).toMatch(/^#cat-/);
+      expect((await a.boundingBox()).height).toBeGreaterThanOrEqual(44);
+      expect((await a.textContent()).trim()).toBe((await page.locator(href + ' h2').textContent()).trim());
+    }
+    const ultimo = links.nth(1); const alvo = await ultimo.getAttribute('href');
+    await ultimo.scrollIntoViewIfNeeded(); await ultimo.click();
+    await page.waitForFunction((h) => { const r = document.querySelector(h).getBoundingClientRect(); return Math.abs(r.top - 96) < 20; }, alvo, { timeout: 8000 });
+    expect(await page.evaluate((h) => getComputedStyle(document.querySelector(h)).scrollMarginTop, alvo)).toBe('96px');
+  });
+
+  test('atalhos: no celular a fileira rola na horizontal sem estourar a pagina', async ({ page }, ti) => {
+    test.skip(!isMobile(ti), 'so celular');
+    const r = await page.locator('nav.atalhos').evaluate((e) => ({ sw: e.scrollWidth, cw: e.clientWidth, ox: getComputedStyle(e).overflowX }));
+    expect(r.ox).toBe('auto'); expect(r.sw).toBeGreaterThan(r.cw);
+    expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(true);
+  });
+
+  test('categoria com poucos itens fica centralizada', async ({ page }, ti) => {
+    test.skip(isMobile(ti), 'so desktop');
+    const c = page.locator('section.cat').last().locator('.cat-grade');
+    await c.scrollIntoViewIfNeeded();
+    const g = await c.boundingBox(); const itens = c.locator('.cat-item'); const k = await itens.count();
+    const a = await itens.first().boundingBox(); const b = await itens.nth(k - 1).boundingBox();
+    expect(k).toBeLessThan(3);
+    expect(Math.abs((a.x - g.x) - (g.x + g.width - (b.x + b.width)))).toBeLessThan(3);
   });
 
   test('comparadores (5) mouse/toque', async ({ page }, ti) => {
