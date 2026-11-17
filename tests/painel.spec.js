@@ -450,6 +450,38 @@ test.describe('P2 resultados e enquadramento', () => {
     expect(caixa.y).toBeGreaterThan(ultimo.y);
   });
 
+  test('V11: dica sob Categoria e 24 px de espaço antes de Enquadramento', async ({ page }) => {
+    await entrar(page);
+    await abrirItem(page, 'cmp-liposhape-1');
+    await expect(page.locator('#dica-categoria')).toHaveText('Em qual seção da página de resultados ele aparece.');
+    const pos = await page.evaluate(() => {
+      const sel = document.getElementById('item-categoria').getBoundingClientRect();
+      const d = document.getElementById('dica-categoria').getBoundingClientRect();
+      return { abaixo: d.top >= sel.bottom - 0.5 };
+    });
+    expect(pos.abaixo).toBe(true);
+    const mt = await page.locator('.titulo-enquadramento').evaluate((e) => parseFloat(getComputedStyle(e).marginTop));
+    expect(mt).toBeGreaterThanOrEqual(24);
+  });
+
+  test('V12: "Onde aparece no site" são interruptores grandes, linha inteira tocável, com checkbox por baixo', async ({ page }) => {
+    await entrar(page);
+    await abrirItem(page, 'cmp-liposhape-1');
+    for (const id of ['item-em-resultados', 'item-na-home']) {
+      const entrada = page.locator('#' + id);
+      await expect(entrada).toHaveAttribute('type', 'checkbox');
+      const linha = page.locator('label[for="' + id + '"]');
+      const caixa = await linha.boundingBox();
+      expect(caixa.height).toBeGreaterThanOrEqual(48);
+      const antes = await entrada.isChecked();
+      // toca no meio do texto, longe do trilho
+      await page.mouse.click(caixa.x + 20, caixa.y + caixa.height / 2);
+      expect(await entrada.isChecked()).toBe(!antes);
+      await expect(linha.locator('.marcar-estado')).toHaveText(!antes ? 'Sim' : 'Não');
+    }
+    await expect(page.locator('#salvar')).toBeEnabled();
+  });
+
   test('V7: sem mudanças o botão diz "Nada para salvar" com contraste de pelo menos 4,5:1', async ({ page }) => {
     await entrar(page);
     await page.click('#cartao-resultados');

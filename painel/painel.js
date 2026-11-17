@@ -1025,11 +1025,19 @@
   };
 
   // --- Edição de um resultado ---
+  /** Interruptor grande: a linha inteira é tocável e, por baixo, continua um checkbox de verdade (leitor de tela e teclado). */
   function caixaMarcar(id, texto, marcado, aoMudar) {
-    var c = h('input', { type: 'checkbox', id: id });
+    var c = h('input', { type: 'checkbox', id: id, class: 'marcar-entrada' });
     c.checked = !!marcado;
-    c.addEventListener('change', function () { aoMudar(c.checked); });
-    return h('label', { class: 'marcar', attrs: { for: id } }, c, h('span', { text: texto }));
+    var estado = h('span', { class: 'marcar-estado', attrs: { 'aria-hidden': 'true' } });
+    function pintarEstado() { estado.textContent = c.checked ? 'Sim' : 'Não'; }
+    pintarEstado();
+    c.addEventListener('change', function () { pintarEstado(); aoMudar(c.checked); });
+    return h('label', { class: 'marcar marcar-interruptor', attrs: { for: id } },
+      c,
+      h('span', { class: 'marcar-texto', text: texto }),
+      estado,
+      h('span', { class: 'marcar-trilho', attrs: { 'aria-hidden': 'true' } }, h('span', { class: 'marcar-botao' })));
   }
 
   /** Prévia igual à do site: mesmas medidas, cores e a barra de comparar. */
@@ -1246,6 +1254,7 @@
     });
     corpo.appendChild(h('label', { text: 'Categoria', attrs: { for: 'item-categoria' } }));
     corpo.appendChild(sel);
+    corpo.appendChild(h('p', { class: 'dica', id: 'dica-categoria', text: 'Em qual seção da página de resultados ele aparece.' }));
 
     corpo.appendChild(h('p', { class: 'rotulo', text: 'Onde aparece no site' }));
     corpo.appendChild(caixaMarcar('item-em-resultados', 'Na página de resultados', item.em_resultados, function (v) {
@@ -1271,7 +1280,7 @@
           on: { click: function () { S.arg = { id: item.id, lado: p[0] }; desenhar(); } }
         }));
       });
-      corpo.appendChild(h('h2', { text: 'Enquadramento' }));
+      corpo.appendChild(h('h2', { class: 'titulo-enquadramento', text: 'Enquadramento' }));
       corpo.appendChild(abas);
       var previa = montarPrevia(item.id);
       var ed = montarEditor(item.id, lado, function () {
