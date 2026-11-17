@@ -1,6 +1,25 @@
 {
   "version": "0.0.1",
   "configurations": [
-    { "name": "site", "runtimeExecutable": "npm", "runtimeArgs": ["run", "previa"], "port": 8765 }
+    {
+      "name": "site",
+      "runtimeExecutable": "npm",
+      "runtimeArgs": [
+        "run",
+        "previa"
+      ],
+      "port": 8765
+    },
+    {
+      "name": "site-previa",
+      "runtimeExecutable": "node",
+      "runtimeArgs": [
+        "ferramentas/previa.mjs"
+      ],
+      "port": 8795,
+      "env": {
+        "PORTA": "8795"
+      }
+    }
   ]
 }
