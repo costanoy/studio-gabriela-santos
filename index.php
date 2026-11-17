@@ -58,14 +58,16 @@ parcial('estilo-home');
 
   <section id="sobre" class="sobre">
     <div class="contem sobre-grade">
+      <div class="sobre-cab">
+        <p class="rotulo"><?= e($sobre['rotulo']) ?></p>
+        <h2><?= e($sobre['titulo']) ?></h2>
+      </div>
       <div class="retrato-col reveal" id="sobre-retrato">
         <div class="retrato-b">
           <img id="sobre-foto" src="<?= e(url_midia($foto['arquivo'])) ?>" alt="<?= e($foto['alt']) ?>" width="<?= (int) $foto['largura'] ?>" height="<?= (int) $foto['altura'] ?>" loading="lazy">
         </div>
       </div>
       <div class="sobre-txt reveal" id="sobre-texto">
-        <p class="rotulo"><?= e($sobre['rotulo']) ?></p>
-        <h2><?= e($sobre['titulo']) ?></h2>
 <?php foreach ($sobre['paragrafos'] as $i => $p): ?>
         <p class="<?= $i === 0 ? 'sobre-destaque' : 'sobre-corrido' ?>"><?= e($p) ?></p>
 <?php endforeach; ?>
@@ -91,7 +93,7 @@ parcial('estilo-home');
       </div>
       <div class="faixa-video-col">
         <div class="video-moldura">
-          <video id="apresentacao-video" src="<?= e(url_midia($sobre['video']['arquivo'])) ?>" controls playsinline preload="none" poster="<?= e(url_midia($sobre['video']['poster'])) ?>" width="<?= $vl ?>" height="<?= $va ?>" style="aspect-ratio: <?= $vl ?>/<?= $va ?>; scroll-margin-top: 150px;"></video>
+          <video id="apresentacao-video" src="<?= e(url_midia($sobre['video']['arquivo'])) ?>" playsinline preload="none" poster="<?= e(url_midia($sobre['video']['poster'])) ?>" width="<?= $vl ?>" height="<?= $va ?>" style="aspect-ratio: <?= $vl ?>/<?= $va ?>; scroll-margin-top: 150px;"></video>
           <button type="button" class="video-play" onclick="tocarVideo(this)" aria-label="Reproduzir vídeo"><svg width="24" height="24" viewBox="0 0 24 24" fill="#FBF3EE" aria-hidden="true"><path d="M8 5.5v13a1 1 0 0 0 1.5.86l10.5-6.5a1 1 0 0 0 0-1.72L9.5 4.64A1 1 0 0 0 8 5.5z"></path></svg></button>
         </div>
       </div>
@@ -157,13 +159,13 @@ parcial('estilo-home');
         <div class="curso">
           <div class="curso-cab">
             <div>
-              <h3><?= e($curso['titulo']) ?></h3>
               <p class="curso-carga"><?= e($curso['carga_horaria']) ?></p>
+              <h3><?= e($curso['titulo']) ?></h3>
               <p class="curso-desc"><?= e($curso['descricao']) ?></p>
             </div>
             <div class="curso-acoes">
               <a href="<?= e(link_whatsapp($ct, $curso['mensagem_whatsapp'])) ?>" target="_blank" rel="noopener" class="btn btn-marrom">Chamar no WhatsApp</a>
-              <button type="button" onclick="toggleCurso('<?= e($curso['id']) ?>', this)" aria-expanded="false" aria-controls="<?= e($curso['id']) ?>" class="btn btn-contorno">Ver descrição completa</button>
+              <button type="button" onclick="toggleCurso('<?= e($curso['id']) ?>', this)" aria-expanded="false" aria-controls="<?= e($curso['id']) ?>" class="curso-toggle">Ver descrição completa</button>
             </div>
           </div>
           <div id="<?= e($curso['id']) ?>" class="curso-detalhe" style="display:none;">
@@ -243,14 +245,17 @@ parcial('estilo-home');
               <a href="https://instagram.com/<?= e($ct['instagram_usuario']) ?>" target="_blank" rel="noopener">@<?= e($ct['instagram_usuario']) ?></a>
             </div>
           </div>
-          <div class="contato-dado">
-            <a id="avaliacao-online-link" class="btn btn-contorno-claro contato-avaliacao" href="<?= e($ct['avaliacao_online']) ?>" target="_blank" rel="noopener">Avaliação Online</a>
-          </div>
         </div>
       </div>
-      <div class="contato-mapa">
-        <iframe src="<?= e($ct['maps_embed']) ?>" title="Localização do Studio Gabriela Santos" loading="lazy" referrerpolicy="no-referrer-when-downgrade"></iframe>
-        <a href="<?= e($ct['maps_link']) ?>" target="_blank" rel="noopener" class="btn btn-claro">Abrir no Google Maps</a>
+      <div class="contato-lado">
+        <div class="contato-mapa">
+          <img class="mapa-mono" src="<?= e(url_midia($hero['imagem']['arquivo'])) ?>" alt="" aria-hidden="true" width="<?= (int) $hero['imagem']['largura'] ?>" height="<?= (int) $hero['imagem']['altura'] ?>" loading="lazy">
+          <iframe src="<?= e($ct['maps_embed']) ?>" title="Localização do Studio Gabriela Santos" loading="lazy" referrerpolicy="no-referrer-when-downgrade"></iframe>
+        </div>
+        <div class="contato-acoes">
+          <a href="<?= e($ct['maps_link']) ?>" target="_blank" rel="noopener" class="btn btn-contorno-claro">Abrir no Google Maps</a>
+          <a id="avaliacao-online-link" class="btn btn-contorno-claro" href="<?= e($ct['avaliacao_online']) ?>" target="_blank" rel="noopener">Avaliação Online</a>
+        </div>
       </div>
     </div>
   </section>
