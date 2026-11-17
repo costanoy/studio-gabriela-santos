@@ -32,7 +32,7 @@ parcial('estilo-base');
 .sobre-txt { order: 3; }
 .sobre h2 { margin: 16px 0 0; font-size: 36px; line-height: 1.1; letter-spacing: -.01em; }
 .retrato-b { position: relative; isolation: isolate; width: 72%; max-width: 280px; margin: 32px auto 40px; }
-.retrato-b::before { content: ''; position: absolute; inset: 0; z-index: -1; transform: translate(-10px, -10px); border: 1px solid var(--champanhe); border-radius: 999px 999px 4px 4px; }
+.retrato-b::before { content: ''; position: absolute; inset: -12px; z-index: -1; border: 1px solid var(--champanhe); border-radius: 999px 999px 4px 4px; }
 .retrato-b img { width: 100%; height: auto; aspect-ratio: 3 / 4; object-fit: cover; object-position: center top; border-radius: 999px 999px 4px 4px; background: var(--cafe-escuro); box-shadow: 0 30px 60px -30px rgba(42,29,23,.45); }
 .sobre-destaque { margin-top: 24px; font-size: 19px; line-height: 1.6; color: var(--cafe); }
 .sobre-corrido { margin-top: 16px; font-size: 16px; line-height: 1.7; color: var(--texto); }
@@ -147,7 +147,7 @@ parcial('estilo-base');
   .sobre-grade { display: grid; grid-template-columns: repeat(12, minmax(0, 1fr)); column-gap: 24px; align-items: start; }
   .retrato-col { grid-column: 1 / 6; grid-row: 1 / span 2; position: sticky; top: 120px; }
   .retrato-b { width: min(503px, 100%); max-width: none; margin: 0; }
-  .retrato-b::before { transform: translate(-14px, -14px); }
+  .retrato-b::before { inset: -14px; }
   .sobre-cab { grid-column: 7 / 13; grid-row: 1; }
   .sobre-txt { grid-column: 7 / 13; grid-row: 2; }
   .sobre h2 { font-size: clamp(36px, 3.9vw, 56px); line-height: 1.05; }
