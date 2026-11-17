@@ -87,6 +87,10 @@ if ($primeira === 'conteudo' && !preg_match('#\.(webp|jpe?g|png|mp4)$#i', $camin
     exit('Acesso negado.');
 }
 
+// Prévia das direções visuais: só direcao-a.php e direcao-b.php executam (nunca os arquivos _*.php). Não vai para a Hostinger.
+if (preg_match('#^/prototipos/direcao-[ab]\.php$#', $caminho) && is_file($arquivo)) {
+    r_executar($arquivo);
+}
 // PHP só executa dentro de painel/
 if (preg_match('#^/painel/.+\.php$#', $caminho) && is_file($arquivo)) {
     r_executar($arquivo);

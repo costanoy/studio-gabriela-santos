@@ -25,7 +25,7 @@ $arquivos = [
 // Pastas inteiras que entram, e só com estas extensões (nome sem ponto, em minúsculas).
 // '.htaccess' vale como nome de arquivo inteiro.
 $pastas = [
-    'assets'   => ['webp', 'jpg', 'jpeg', 'png', 'svg', 'woff2', 'mp4'],
+    'assets'   => ['webp', 'jpg', 'jpeg', 'png', 'svg', 'woff2', 'mp4', 'ofl.txt'],
     'nucleo'   => ['php'],
     'parciais' => ['php'],
     'painel'   => ['php', 'js', 'css', '.htaccess'],
