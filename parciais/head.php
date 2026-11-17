@@ -44,5 +44,9 @@ $og_imagem = $base . '/' . url_midia($seo['og_imagem']);
 <?= jsonld($home ? jsonld_negocio($c) : jsonld_breadcrumb()) ?>
 
 </script>
+<?php if ($home): ?>
+<link rel="preload" href="assets/fonts/cormorant-garamond-500-latin.woff2" as="font" type="font/woff2" crossorigin>
+<?php else: ?>
 <link rel="preload" href="assets/fonts/4c2bca52.woff2" as="font" type="font/woff2" crossorigin>
+<?php endif; ?>
 <link rel="preload" href="assets/fonts/23e9ba1c.woff2" as="font" type="font/woff2" crossorigin>
