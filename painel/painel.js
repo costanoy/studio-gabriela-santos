@@ -689,7 +689,7 @@
   var ABAS = [
     { id: 'home', nome: 'Página inicial' },
     { id: 'resultados', nome: 'Página de resultados' },
-    { id: 'fora', nome: 'Fora do site' }
+    { id: 'fora', nome: 'Escondidos' }
   ];
   var TIPOS = { comparacao: 'Antes e depois', video: 'Vídeo', foto: 'Foto' };
   var LIMITE_HOME = 5;
@@ -873,7 +873,7 @@
       corpo.appendChild(h('p', { class: 'dica', text: 'Na página inicial aparecem os ' + LIMITE_HOME + ' primeiros.' }));
     }
     if (S.aba === 'fora') {
-      corpo.appendChild(h('p', { class: 'dica', text: 'Estes não aparecem no site. Toque em Editar para colocar de volta.' }));
+      corpo.appendChild(h('p', { class: 'dica', text: 'Estes ficam guardados aqui e não aparecem no site. Toque em Editar para mostrar de novo.' }));
     }
 
     var lista = listaVisivel();

@@ -428,6 +428,15 @@ test.describe('P2 resultados e enquadramento', () => {
     await expect(page.locator('#foto-sobreposta')).toBeHidden();
   });
 
+  test('V9: a aba que guarda o que está fora do site se chama Escondidos', async ({ page }) => {
+    await entrar(page);
+    await page.click('#cartao-resultados');
+    await expect(page.locator('#aba-fora')).toHaveText('Escondidos');
+    await expect(page.locator('body')).not.toContainText('Fora do site');
+    await page.click('#aba-fora');
+    await expect(page.locator('body')).toContainText('não aparecem no site');
+  });
+
   test('V7: sem mudanças o botão diz "Nada para salvar" com contraste de pelo menos 4,5:1', async ({ page }) => {
     await entrar(page);
     await page.click('#cartao-resultados');

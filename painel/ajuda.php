@@ -29,7 +29,7 @@ $secoes = [
     ]],
     ['Mudar a ordem das fotos', [
         'Toque em Antes e depois.',
-        'Escolha onde as fotos aparecem: Página inicial, Resultados ou Fora do site.',
+        'Escolha onde as fotos aparecem: Página inicial, Resultados ou Escondidos.',
         'Toque em Subir ou Descer, os botões que ficam na linha de cada foto.',
         'Toque em Salvar no site.',
     ]],
