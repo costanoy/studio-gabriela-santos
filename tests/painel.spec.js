@@ -1052,6 +1052,10 @@ test.describe('P5 iPhone e ajuda', () => {
     await expect(page.locator('h1')).toHaveText('Ajuda');
     await expect(page.locator('.ajuda-secao')).toHaveCount(7);
     await expect(page.locator('body')).toContainText('Desfazer');
+    // V5: a ajuda usa os nomes reais dos botões e não fala em "setas"
+    const texto = await page.locator('body').innerText();
+    for (const nome of ['Subir', 'Descer', 'Editar', 'Desfazer ajuste', 'Sobrepor a outra foto', 'Não apagar', 'Salvar no site']) expect(texto).toContain(nome);
+    expect(texto).not.toMatch(/as setas|ao lado do item|ao lado da foto/);
     const a = await auditarTela(page);
     expect(a.pequenos).toEqual([]);
     expect(a.larguraExtra).toBeLessThanOrEqual(0);
