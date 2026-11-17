@@ -728,6 +728,28 @@ test.describe('L14 conflito e rascunho', () => {
     expect(await page.evaluate(() => window.localStorage.getItem('painel-rascunho'))).toBeNull();
   });
 
+  test('rascunho de uma revisão antiga só é recuperado depois de um sim claro na janela de confirmação', async ({ page }) => {
+    await entrar(page);
+    await page.evaluate(() => {
+      const c = { home: {}, resultados: { itens: [] } };
+      window.localStorage.setItem('painel-rascunho', JSON.stringify({ c, rev: -5, tela: 'textos', quando: new Date().toISOString() }));
+    });
+    await page.reload();
+    await expect(page.locator('#oferta-rascunho')).toContainText('O site foi alterado desde então');
+    await page.click('#rascunho-recuperar');
+    await expect(page.locator('#modal-ok')).toBeVisible();
+    await expect(page.locator('.modal')).toContainText('tomar o lugar do que está no site agora');
+    // Não: nada muda e o rascunho continua guardado
+    await page.click('#modal-cancelar');
+    await expect(page.locator('#oferta-rascunho')).toBeVisible();
+    expect(await page.evaluate(() => window.localStorage.getItem('painel-rascunho'))).not.toBeNull();
+    // Sim: recupera
+    await page.click('#rascunho-recuperar');
+    await page.click('#modal-ok');
+    await expect(page.locator('#oferta-rascunho')).toHaveCount(0);
+    expect(await page.evaluate(() => window.localStorage.getItem('painel-rascunho'))).toBeNull();
+  });
+
   test('descartar o rascunho apaga o que estava guardado', async ({ page }) => {
     await entrar(page);
     await page.evaluate(() => {

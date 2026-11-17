@@ -212,11 +212,21 @@
           h('span', { text: 'Você tem mudanças guardadas de antes' + (rasc.quando ? ' (' + quando(rasc.quando) + ')' : '') + '. Quer continuar de onde parou?' + (difere ? ' O site foi alterado desde então: ao salvar, suas mudanças guardadas vão substituir o que está no site.' : '') }),
           h('div', { class: 'linha-botoes' },
             h('button', { class: 'botao botao-principal', type: 'button', id: 'rascunho-recuperar', text: 'Recuperar mudanças', on: { click: function () {
-              S.c = rasc.c;
-              S.sujo = true;
-              S.resumo = ['Recuperou mudanças guardadas'];
-              rascunhoApagar();
-              ir(rasc.tela === 'resultados' ? 'resultados' : 'textos');
+              var recuperar = function () {
+                S.c = rasc.c;
+                S.sujo = true;
+                S.resumo = ['Recuperou mudanças guardadas'];
+                rascunhoApagar();
+                ir(rasc.tela === 'resultados' ? 'resultados' : 'textos');
+              };
+              // Se o site mudou desde que o rascunho foi guardado (ex.: outra pessoa salvou), pede um sim claro
+              if (!difere) { recuperar(); return; }
+              confirmar({
+                titulo: 'Substituir o que está no site?',
+                texto: 'O site foi alterado depois que estas mudanças foram guardadas. Se você continuar e salvar, as mudanças guardadas vão tomar o lugar do que está no site agora. A versão de agora fica guardada em Versões, e você pode voltar para ela.',
+                ok: 'Sim, recuperar minhas mudanças',
+                cancelar: 'Não, voltar'
+              }).then(function (sim) { if (sim) recuperar(); });
             } } }),
             h('button', { class: 'botao', type: 'button', id: 'rascunho-descartar', text: 'Descartar', on: { click: function () { rascunhoApagar(); desenhar(); } } })))));
     }
