@@ -1,4 +1,7 @@
 const { test, expect } = require('@playwright/test');
+const fs = require('fs');
+const path = require('path');
+const ROOT = path.join(__dirname, '..');
 
 const isMobile = (ti) => ti.project.name.startsWith('iphone');
 const isWebkit = (ti) => ti.project.name === 'iphone-webkit';
@@ -127,7 +130,7 @@ test.describe('index.html', () => {
   });
 
   test('Ver mais leva a resultados.html', async ({ page }, ti) => {
-    const link = isMobile(ti) ? page.locator('#ver-mais-mobile') : page.locator('#ver-mais-cell a');
+    const link = isMobile(ti) ? page.locator('#ver-mais-mobile') : page.locator('#ver-mais-desktop');
     await link.scrollIntoViewIfNeeded(); await expect(link).toBeVisible();
     await Promise.all([page.waitForURL(/resultados\.html/), link.click()]);
     await expect(page.locator('h1')).toContainText(/resultados/i);
@@ -156,14 +159,13 @@ test.describe('index.html', () => {
   });
 
   test('carrosseis: setas movem o scroll', async ({ page }) => {
-    for (const id of ['procedimentos', 'depoimentos']) {
+    for (const id of ['depoimentos']) {
       const grid = page.locator(`#${id}-grid`); await page.evaluate((i) => document.getElementById(i + '-grid').scrollIntoView({ block: 'center' }), id);
       await page.locator(`#${id}-arrow-right`).click({ force: true });
       await expect.poll(() => grid.evaluate((g) => g.scrollLeft), { timeout: 4000 }).toBeGreaterThan(10);
       await page.locator(`#${id}-arrow-left`).click({ force: true });
       await expect.poll(() => grid.evaluate((g) => Math.abs(g.scrollLeft - g.children[0].offsetLeft)), { timeout: 4000 }).toBeLessThan(5);
     }
-    expect(await page.locator('#procedimentos-grid').evaluate((g) => g.children.length)).toBe(7);
     expect(await page.locator('#depoimentos-grid').evaluate((g) => g.children.length)).toBe(4);
   });
 
@@ -174,15 +176,12 @@ test.describe('index.html', () => {
     await expect.poll(() => grid.evaluate((g) => g.scrollLeft), { timeout: 4000 }).toBeGreaterThan(10);
   });
 
-  test('arrastar carrossel de procedimentos com mouse', async ({ page }, ti) => {
-    test.skip(isMobile(ti), 'so desktop');
-    await page.evaluate(() => document.getElementById('procedimentos-grid').scrollIntoView({ block: 'center' }));
-    await page.waitForTimeout(1200);
-    const grid = page.locator('#procedimentos-grid');
-    const b = await grid.boundingBox();
-    await page.mouse.move(b.x + b.width * 0.8, b.y + 80); await page.mouse.down();
-    await page.mouse.move(b.x + b.width * 0.2, b.y + 80, { steps: 10 }); await page.mouse.up();
-    await expect.poll(() => grid.evaluate((g) => g.scrollLeft), { timeout: 3000 }).toBeGreaterThan(50);
+  test('procedimentos: lista numerada com um item por procedimento do JSON', async ({ page }) => {
+    const json = JSON.parse(fs.readFileSync(path.join(ROOT, 'dados/site.padrao.json'), 'utf8'));
+    const esperado = json.home.procedimentos.itens.length;
+    const itens = page.locator('ol#procedimentos-grid > li');
+    expect(await itens.count()).toBe(esperado);
+    await expect(page.locator('#procedimentos button')).toHaveCount(0);
   });
 
   test('cursos: ver descricao completa abre e fecha', async ({ page }) => {

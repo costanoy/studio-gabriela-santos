@@ -127,7 +127,8 @@ test('T03 logo-gs e hero-bg da home pesam pouco (<= 40 KB cada) e logo-gs nao e 
   console.log('T03', JSON.stringify(sizes), 'logo natural/exibido', r.nat, Math.round(r.shown));
   expect(sizes.length).toBeGreaterThan(0);
   for (const [n, s] of sizes) expect(s, n).toBeLessThanOrEqual(40 * 1000);
-  expect(r.nat).toBeLessThanOrEqual(Math.max(r.shown, 1) * 2.5);
+  // O guia reduziu a logo (76/56 px de altura); 10 KB, entao a folga de 4x cobre telas 3x sem peso extra.
+  expect(r.nat).toBeLessThanOrEqual(Math.max(r.shown, 1) * 4);
 });
 
 // =====================================================================
@@ -265,30 +266,34 @@ test('S5 ao ir para uma ancora, o primeiro texto da secao fica abaixo do cabecal
 // =====================================================================
 // S6 / L05 - carrosseis
 // =====================================================================
-test('S6 setas do carrossel de Procedimentos nao cobrem texto (celular)', async ({ page }, ti) => {
-  test.skip(!isMobile(ti), 'so celular');
+test('S6 Procedimentos e uma lista numerada: sem setas e sem carrossel, numeros do contador CSS', async ({ page }, ti) => {
   await page.goto('/index.html');
-  await page.addStyleTag({ content: '.reveal{opacity:1!important;transform:none!important}' });
+  await page.addStyleTag({ content: '.reveal,.reveal-item{opacity:1!important;transform:none!important}' });
   await page.locator('#procedimentos-grid').scrollIntoViewIfNeeded();
-  const cobre = await page.evaluate(() => {
-    const sec = document.getElementById('procedimentos'); const out = [];
-    const arrows = [...sec.querySelectorAll('.mobile-scroll-arrow, [id^="procedimentos-arrow"]')].filter((a) => a.getBoundingClientRect().width > 0);
-    const w = document.createTreeWalker(document.getElementById('procedimentos-grid'), NodeFilter.SHOW_TEXT);
-    let n; while ((n = w.nextNode())) {
-      if (n.textContent.trim().length < 2) continue;
-      const rg = document.createRange(); rg.selectNodeContents(n);
-      for (const tr of rg.getClientRects()) for (const a of arrows) { const r = a.getBoundingClientRect();
-        const vis = tr.right > 0 && tr.left < innerWidth; if (vis && tr.left < r.right && tr.right > r.left && tr.top < r.bottom && tr.bottom > r.top) out.push(n.textContent.trim().slice(0, 25)); }
-    }
-    return { arrows: arrows.length, out };
+  const r = await page.evaluate(() => {
+    const g = document.getElementById('procedimentos-grid');
+    const itens = [...g.children];
+    return {
+      tag: g.tagName, setas: document.querySelectorAll('#procedimentos button, [id^="procedimentos-arrow"]').length,
+      contador: document.querySelectorAll('[data-grid="procedimentos-grid"]').length,
+      semScrollLateral: g.scrollWidth <= g.clientWidth + 1,
+      numeros: itens.map((li) => getComputedStyle(li, '::before').content),
+      colunas: getComputedStyle(g).gridTemplateColumns.split(' ').length,
+      itens: itens.length,
+    };
   });
-  console.log('S6', JSON.stringify(cobre));
-  expect(cobre.arrows).toBeGreaterThan(0);
-  expect(cobre.out).toEqual([]);
+  console.log('S6', JSON.stringify(r));
+  expect(r.tag).toBe('OL');
+  expect(r.setas).toBe(0);
+  expect(r.contador).toBe(0);
+  expect(r.semScrollLateral).toBe(true);
+  expect(r.itens).toBeGreaterThanOrEqual(1);
+  expect(r.colunas).toBe(isMobile(ti) ? 1 : 2);
+  expect(r.numeros.every((n) => n && n !== 'none' && n !== 'normal')).toBe(true);
 });
 
 test.describe('L05 setas do carrossel sem o evento scrollend (iOS <= 26.1)', () => {
-  for (const grid of ['procedimentos-grid', 'depoimentos-grid', 'resultados-grid']) {
+  for (const grid of ['depoimentos-grid', 'resultados-grid']) {
     test(`L05 ${grid}: depois de deslizar ate o card 4 (ou o penultimo), a seta "proximo" avanca exatamente 1`, async ({ page }, ti) => {
       test.skip(!isMobile(ti), 'so celular');
       await page.addInitScript(() => {

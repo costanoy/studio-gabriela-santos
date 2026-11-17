@@ -7,17 +7,21 @@ require_once RAIZ . '/nucleo/render.php';
 $c = conteudo_ler();
 $ct = $c['contato'];
 $h = $c['home'];
+$hero = $h['hero'];
+$sobre = $h['sobre'];
+$foto = $sobre['foto'];
 $vars = ['c' => $c, 'pagina' => 'home'];
 $wa = link_whatsapp($ct);
-$seta_esq = '<svg width="20" height="20" viewBox="0 0 24 24" fill="none"><path d="M15 6l-6 6 6 6" stroke="#996C55" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"></path></svg>';
-$seta_dir = '<svg width="20" height="20" viewBox="0 0 24 24" fill="none"><path d="M9 6l6 6-6 6" stroke="#996C55" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"></path></svg>';
-$seta_esq_marrom = str_replace('stroke="#996C55"', 'stroke="#FBF3EE"', $seta_esq);
-$seta_dir_marrom = str_replace('stroke="#996C55"', 'stroke="#FBF3EE"', $seta_dir);
-$estrela = '<svg width="18" height="18" viewBox="0 0 24 24" fill="#996C55"><path d="M12 2.5l2.9 6.4 6.9.7-5.2 4.8 1.5 6.9-6.1-3.6-6.1 3.6 1.5-6.9-5.2-4.8 6.9-.7z"></path></svg>';
-$icone_pino = '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" style="flex-shrink:0;"><path d="M12 21s-7-6.1-7-11.5A7 7 0 0 1 19 9.5C19 14.9 12 21 12 21z" stroke="#996C55" stroke-width="1.6" stroke-linejoin="round"></path><circle cx="12" cy="9.5" r="2.4" stroke="#996C55" stroke-width="1.6"></circle></svg>';
-$icone_relogio = '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" style="flex-shrink:0;"><circle cx="12" cy="12" r="8.5" stroke="#996C55" stroke-width="1.6"></circle><path d="M12 7.5V12l3 2" stroke="#996C55" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"></path></svg>';
-$icone_insta = '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" style="flex-shrink:0;"><rect x="3.5" y="3.5" width="17" height="17" rx="5" stroke="#996C55" stroke-width="1.6"></rect><circle cx="12" cy="12" r="4" stroke="#996C55" stroke-width="1.6"></circle><circle cx="17.2" cy="6.8" r="1" fill="#996C55"></circle></svg>';
-$seta_ver_mais = static fn(int $t): string => '<svg width="' . $t . '" height="' . $t . '" viewBox="0 0 24 24" fill="none"><path d="M5 12h14M13 6l6 6-6 6" stroke="#FBF3EE" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"></path></svg>';
+$seta_esq = '<svg width="20" height="20" viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M15 6l-6 6 6 6" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"></path></svg>';
+$seta_dir = '<svg width="20" height="20" viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M9 6l6 6-6 6" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"></path></svg>';
+$estrela = '<svg width="16" height="16" viewBox="0 0 24 24" fill="#996C55" aria-hidden="true"><path d="M12 2.5l2.9 6.4 6.9.7-5.2 4.8 1.5 6.9-6.1-3.6-6.1 3.6 1.5-6.9-5.2-4.8 6.9-.7z"></path></svg>';
+$ic = static fn(string $d): string => '<svg width="20" height="20" viewBox="0 0 24 24" fill="none" aria-hidden="true">' . $d . '</svg>';
+$icone_pino = $ic('<path d="M12 21s-7-6.1-7-11.5A7 7 0 0 1 19 9.5C19 14.9 12 21 12 21z" stroke="#E3C9A8" stroke-width="1.4" stroke-linejoin="round"></path><circle cx="12" cy="9.5" r="2.4" stroke="#E3C9A8" stroke-width="1.4"></circle>');
+$icone_relogio = $ic('<circle cx="12" cy="12" r="8.5" stroke="#E3C9A8" stroke-width="1.4"></circle><path d="M12 7.5V12l3 2" stroke="#E3C9A8" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"></path>');
+$icone_insta = $ic('<rect x="3.5" y="3.5" width="17" height="17" rx="5" stroke="#E3C9A8" stroke-width="1.4"></rect><circle cx="12" cy="12" r="4" stroke="#E3C9A8" stroke-width="1.4"></circle><circle cx="17.2" cy="6.8" r="1" fill="#E3C9A8"></circle>');
+$seta_ver_mais = '<svg width="22" height="12" viewBox="0 0 22 12" fill="none" aria-hidden="true"><path d="M1 6h20M16 1l5 5-5 5" stroke="currentColor" stroke-width="1.3" stroke-linecap="round" stroke-linejoin="round"></path></svg>';
+$vl = (int) ($sobre['video']['largura'] ?? 0) ?: 576;
+$va = (int) ($sobre['video']['altura'] ?? 0) ?: 1024;
 
 parcial('head', $vars);
 parcial('estilo-home');
@@ -27,169 +31,153 @@ parcial('estilo-home');
 <?php parcial('cabecalho', $vars); ?>
 <main id="conteudo">
 
-  <section id="home" style="position:relative; min-height: 92vh; display:flex; align-items:center; padding: 0 5%; box-sizing:border-box;">
-    <div style="position:absolute; inset:0; z-index:0; overflow:hidden; background:#996C55;">
-      <img id="hero-bg-img" fetchpriority="high" src="<?= e(url_midia($h['hero']['imagem']['arquivo'])) ?>" alt="" style="position:absolute; right:-2%; top:0; width:92%; height:100%; object-fit:contain; object-position:right center;">
-      <div style="position:absolute; inset:0; background: linear-gradient(115deg, rgba(58,42,34,0.8) 0%, rgba(58,42,34,0.5) 42%, rgba(58,42,34,0.18) 75%, rgba(58,42,34,0.06) 100%); pointer-events:none;"></div>
-      <div style="position:absolute; inset:0; background: radial-gradient(ellipse at 30% 45%, rgba(0,0,0,0) 50%, rgba(0,0,0,0.2) 100%); pointer-events:none;"></div>
+  <section id="home" class="hero">
+    <img class="marca-dagua" id="hero-bg-img" src="<?= e(url_midia($hero['imagem']['arquivo'])) ?>" alt="" aria-hidden="true" width="<?= (int) $hero['imagem']['largura'] ?>" height="<?= (int) $hero['imagem']['altura'] ?>" fetchpriority="high">
+    <div class="hero-int" id="hero-content">
+      <div class="hero-texto">
+        <h1><?= e($hero['titulo']) ?></h1>
+        <p class="hero-apoio"><?= e($hero['texto']) ?></p>
+        <div class="hero-acoes">
+          <a class="btn btn-claro" href="<?= e($wa) ?>" target="_blank" rel="noopener"><?= e($hero['botao_principal']) ?></a>
+          <a class="btn btn-contorno-claro" href="#procedimentos"><?= e($hero['botao_secundario']) ?></a>
+        </div>
+      </div>
     </div>
-    <div id="hero-content" style="position:relative; z-index:1; max-width: 620px; padding: 100px 0;">
-      <h1 style="font-family:'Marcellus', serif; font-size: clamp(40px, 5vw, 64px); line-height:1.08; color:#FBF3EE; margin: 0 0 24px;"><?= e($h['hero']['titulo']) ?></h1>
-      <p style="font-size: 20px; line-height:1.6; color:#F3E4DA; margin: 0 0 36px; max-width: 480px;"><?= e($h['hero']['texto']) ?></p>
-      <div style="display:flex; gap:16px; flex-wrap:wrap;">
-        <a href="<?= e($wa) ?>" target="_blank" rel="noopener" class="btn-claro btn-lift" style="text-decoration:none; background:#FBF3EE; color:#6B4A39; padding:16px 32px; border-radius:10px; font-weight:700; font-size:16px; letter-spacing:0.02em; transition: background 0.2s ease, transform 0.2s ease;"><?= e($h['hero']['botao_principal']) ?></a>
-        <a href="#procedimentos" class="btn-outline btn-lift" style="text-decoration:none; background:transparent; border:1.5px solid #F3E4DA; color:#F3E4DA; padding:16px 32px; border-radius:10px; font-weight:700; font-size:16px; letter-spacing:0.02em; transition: background 0.2s ease, transform 0.2s ease;"><?= e($h['hero']['botao_secundario']) ?></a>
+    <span class="hero-linha" aria-hidden="true"></span>
+  </section>
+
+  <section class="boas">
+    <div class="contem boas-int">
+      <div class="boas-txt">
+<?php foreach ($h['boas_vindas']['paragrafos'] as $i => $p): ?>
+        <p class="<?= $i === 0 ? 'boas-frase' : 'boas-corrido' ?>"><?= e($p) ?></p>
+<?php endforeach; ?>
       </div>
     </div>
   </section>
 
-  <div style="padding: 72px 5% 0; box-sizing:border-box;">
-    <div style="max-width:820px; margin:0 auto; background:#F3E4DA; border-radius:20px; padding: 48px 56px; text-align:center;">
-      <p style="font-family:'Marcellus', serif; font-size: clamp(20px, 2.2vw, 26px); line-height:1.5; color:#3A2A22; margin:0 0 18px;"><?= e($h['boas_vindas']['paragrafos'][0]) ?></p>
-      <p style="font-size:17px; line-height:1.7; color:#5C4A40; margin:0;"><?= e($h['boas_vindas']['paragrafos'][1]) ?></p>
+  <section id="sobre" class="sobre">
+    <div class="contem sobre-grade">
+      <div class="retrato-col reveal" id="sobre-retrato">
+        <div class="retrato-b">
+          <img id="sobre-foto" src="<?= e(url_midia($foto['arquivo'])) ?>" alt="<?= e($foto['alt']) ?>" width="<?= (int) $foto['largura'] ?>" height="<?= (int) $foto['altura'] ?>" loading="lazy">
+        </div>
+      </div>
+      <div class="sobre-txt reveal" id="sobre-texto">
+        <p class="rotulo"><?= e($sobre['rotulo']) ?></p>
+        <h2><?= e($sobre['titulo']) ?></h2>
+<?php foreach ($sobre['paragrafos'] as $i => $p): ?>
+        <p class="<?= $i === 0 ? 'sobre-destaque' : 'sobre-corrido' ?>"><?= e($p) ?></p>
+<?php endforeach; ?>
+        <div class="numeros" id="sobre-stats" aria-label="Destaques">
+<?php foreach ($sobre['numeros'] as $n): ?>
+          <div class="numero"><b><?= e($n['valor']) ?></b><span><?= e($n['legenda']) ?></span></div>
+<?php endforeach; ?>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <div class="faixa-video" id="sobre-video-block">
+    <div class="contem faixa-grade">
+      <div class="faixa-texto">
+<?php foreach ($sobre['video_paragrafos'] as $p): ?>
+        <p><?= e($p) ?></p>
+<?php endforeach; ?>
+        <p class="saiba"><?= e($sobre['saiba_mais']) ?>
+          <svg class="seta-lado" width="34" height="14" viewBox="0 0 34 14" fill="none" aria-hidden="true"><path d="M33 7H1M7 1L1 7l6 6" stroke="currentColor" stroke-width="1.2" stroke-linecap="round" stroke-linejoin="round"></path></svg>
+          <svg class="seta-baixo" width="14" height="30" viewBox="0 0 14 30" fill="none" aria-hidden="true"><path d="M7 1v28M1 23l6 6 6-6" stroke="currentColor" stroke-width="1.2" stroke-linecap="round" stroke-linejoin="round"></path></svg>
+        </p>
+      </div>
+      <div class="faixa-video-col">
+        <div class="video-moldura">
+          <video id="apresentacao-video" src="<?= e(url_midia($sobre['video']['arquivo'])) ?>" controls playsinline preload="none" poster="<?= e(url_midia($sobre['video']['poster'])) ?>" width="<?= $vl ?>" height="<?= $va ?>" style="aspect-ratio: <?= $vl ?>/<?= $va ?>; scroll-margin-top: 150px;"></video>
+          <button type="button" class="video-play" onclick="tocarVideo(this)" aria-label="Reproduzir vídeo"><svg width="24" height="24" viewBox="0 0 24 24" fill="#FBF3EE" aria-hidden="true"><path d="M8 5.5v13a1 1 0 0 0 1.5.86l10.5-6.5a1 1 0 0 0 0-1.72L9.5 4.64A1 1 0 0 0 8 5.5z"></path></svg></button>
+        </div>
+      </div>
     </div>
   </div>
 
-  <img id="sobre-photo-mobile" src="<?= e(url_midia($h['sobre']['foto']['arquivo'])) ?>" alt="<?= e($h['sobre']['foto']['alt']) ?>" style="display:none; width:100%; max-width:300px; aspect-ratio:4/5; object-fit:cover; border-radius:20px; margin:48px auto 48px; padding:0 5%; box-sizing:border-box;">
-
-  <section id="sobre" class="reveal" style="padding: 110px 5% 40px; display:grid; grid-template-columns: 0.85fr 1fr; gap: 72px; align-items:stretch; max-width:1280px; margin:0 auto; box-sizing:border-box;">
-    <img id="sobre-foto" src="<?= e(url_midia($h['sobre']['foto']['arquivo'])) ?>" alt="<?= e($h['sobre']['foto']['alt']) ?>" style="width:100%; aspect-ratio: 4/5; object-fit:cover; border-radius:20px;">
-    <div style="display:flex; flex-direction:column; height:100%;">
-      <p style="font-size:13px; letter-spacing:0.15em; text-transform:uppercase; color:#7D5843; font-weight:700; margin:0 0 14px;"><?= e($h['sobre']['rotulo']) ?></p>
-      <h2 style="font-family:'Marcellus', serif; font-size: clamp(30px, 3vw, 42px); margin: 0 0 24px; color:#3A2A22;"><?= e($h['sobre']['titulo']) ?></h2>
-<?php foreach ($h['sobre']['paragrafos'] as $p): ?>
-      <p style="font-size:17px; line-height:1.8; color:#5C4A40; margin: 0 0 18px;"><?= e($p) ?></p>
+  <section id="procedimentos" class="proc">
+    <div class="contem">
+      <div class="reveal" id="procedimentos-topo">
+        <p class="rotulo rotulo-claro"><?= e($h['procedimentos']['rotulo']) ?></p>
+        <h2><?= e($h['procedimentos']['titulo']) ?></h2>
+      </div>
+      <ol class="proc-lista" id="procedimentos-grid">
+<?php foreach ($h['procedimentos']['itens'] as $i => $proc): ?>
+        <li class="proc-item reveal-item" style="--i:<?= $i ?>">
+          <h3><?= e($proc['titulo']) ?></h3>
+          <p><?= e($proc['texto']) ?></p>
+        </li>
 <?php endforeach; ?>
-      <div id="sobre-stats" style="display:flex; gap:40px; flex-wrap:wrap; margin-top:auto;">
-<?php foreach ($h['sobre']['numeros'] as $n): ?>
+      </ol>
+    </div>
+  </section>
+
+  <section id="resultados" class="res reveal">
+    <div class="contem">
+      <div class="res-topo">
         <div>
-          <p style="font-family:'Marcellus', serif; font-size:30px; margin:0; color:#7D5843;"><?= e($n['valor']) ?></p>
-          <p style="font-size:14px; margin:6px 0 0; color:#5C4A40;"><?= e($n['legenda']) ?></p>
+          <p class="rotulo"><?= e($h['resultados']['rotulo']) ?></p>
+          <h2><?= e($h['resultados']['titulo']) ?></h2>
         </div>
-<?php endforeach; ?>
+        <a id="ver-mais-desktop" class="btn-texto res-ver-desktop" href="resultados.html"><span class="t"><?= e($h['resultados']['texto_ver_mais']) ?></span><?= $seta_ver_mais ?></a>
       </div>
-    </div>
-  </section>
-
-  <div style="padding: 40px 5% 110px; display:grid; grid-template-columns: 1fr 0.85fr; gap: 72px; align-items:center; max-width:1280px; margin:0 auto; box-sizing:border-box;" id="sobre-video-block">
-    <div>
-<?php $vp = $h['sobre']['video_paragrafos']; foreach ($vp as $i => $p): ?>
-      <p style="font-size:17px; line-height:1.8; color:#5C4A40; margin: 0 0 <?= $i === count($vp) - 1 ? '24' : '18' ?>px;"><?= e($p) ?></p>
-<?php endforeach; ?>
-      <p style="font-size:20px; font-weight:700; color:#7D5843; margin:0; display:flex; align-items:center; gap:8px;"><?= e($h['sobre']['saiba_mais']) ?> <span id="saiba-arrow" style="display:inline-flex; align-items:center;">→</span></p>
-    </div>
-    <div style="width:100%; display:flex; justify-content:center;">
-      <div style="position:relative; max-width:100%; display:flex;">
-<?php $vl = (int) ($h['sobre']['video']['largura'] ?? 0) ?: 576; $va = (int) ($h['sobre']['video']['altura'] ?? 0) ?: 1024; ?>
-      <video id="apresentacao-video" src="<?= e(url_midia($h['sobre']['video']['arquivo'])) ?>" controls="" playsinline="" preload="none" poster="<?= e(url_midia($h['sobre']['video']['poster'])) ?>" style="scroll-margin-top:150px; max-width:100%; max-height:480px; width:auto; aspect-ratio: <?= $vl ?>/<?= $va ?>; object-fit:cover; border-radius:20px; display:block; background:#000;"></video>
-        <button type="button" class="video-play" onclick="tocarVideo(this)" aria-label="Reproduzir vídeo"><svg width="26" height="26" viewBox="0 0 24 24" fill="#FBF3EE" aria-hidden="true"><path d="M8 5.5v13a1 1 0 0 0 1.5.86l10.5-6.5a1 1 0 0 0 0-1.72L9.5 4.64A1 1 0 0 0 8 5.5z"></path></svg></button>
-      </div>
-    </div>
-  </div>
-
-  <section id="procedimentos" class="reveal" style="padding: 110px 5%; background:#7D5843; box-sizing:border-box;">
-    <div style="max-width:1280px; margin:0 auto;">
-      <p style="font-size:13px; letter-spacing:0.15em; text-transform:uppercase; color:#F3E4DA; font-weight:700; margin:0 0 14px; text-align:center;"><?= e($h['procedimentos']['rotulo']) ?></p>
-      <h2 style="font-family:'Marcellus', serif; font-size: clamp(30px, 3vw, 42px); margin: 0 0 56px; color:#FBF3EE; text-align:center;"><?= e($h['procedimentos']['titulo']) ?></h2>
-      <div class="carrossel" style="position:relative;">
-      <div id="procedimentos-grid" style="display:flex; overflow-x:auto; scroll-snap-type:x proximity; -webkit-overflow-scrolling:touch; gap: 16px; padding-bottom:8px; user-select:none; cursor:grab;">
-<?php foreach ($h['procedimentos']['itens'] as $proc): ?>
-        <div style="background:#6B4A39; border-radius:20px; padding: 40px 32px; min-height:230px; box-sizing:border-box; flex:0 0 300px; scroll-snap-align:start;">
-          <h3 style="font-family:'Marcellus', serif; font-size:22px; margin:0 0 12px; color:#FBF3EE;"><?= e($proc['titulo']) ?></h3>
-          <p style="font-size:16px; line-height:1.7; color:#D8C4B8; margin:0;"><?= e($proc['texto']) ?></p>
-        </div>
-<?php endforeach; ?>
-      </div>
-      <button id="procedimentos-arrow-left" type="button" onclick="scrollByCard('procedimentos-grid', -1)" aria-label="Ver procedimentos anteriores" style="display:flex; position:absolute; left:-56px; top:50%; transform:translateY(-50%); width:44px; height:44px; border-radius:50%; background:#FBF3EE; border:none; align-items:center; justify-content:center; box-shadow:0 2px 10px rgba(0,0,0,0.25); cursor:pointer; z-index:2;">
-        <?= $seta_esq ?>
-
-      </button>
-      <button id="procedimentos-arrow-right" type="button" onclick="scrollByCard('procedimentos-grid', 1)" aria-label="Ver mais procedimentos" style="display:flex; position:absolute; right:-56px; top:50%; transform:translateY(-50%); width:44px; height:44px; border-radius:50%; background:#FBF3EE; border:none; align-items:center; justify-content:center; box-shadow:0 2px 10px rgba(0,0,0,0.25); cursor:pointer; z-index:2;">
-        <?= $seta_dir ?>
-
-      </button>
-      <span class="carrossel-contador" data-grid="procedimentos-grid"></span>
-      </div>
-    </div>
-  </section>
-
-  <section id="resultados" class="reveal" style="padding: 110px 5%; box-sizing:border-box;">
-    <div style="max-width:1280px; margin:0 auto;">
-      <p style="font-size:13px; letter-spacing:0.15em; text-transform:uppercase; color:#7D5843; font-weight:700; margin:0 0 14px; text-align:center;"><?= e($h['resultados']['rotulo']) ?></p>
-      <h2 style="font-family:'Marcellus', serif; font-size: clamp(30px, 3vw, 42px); margin: 0 0 56px; color:#3A2A22; text-align:center;"><?= e($h['resultados']['titulo']) ?></h2>
-      <div class="carrossel" style="position:relative;">
-      <div id="resultados-grid" style="display:grid; grid-template-columns: repeat(auto-fit, minmax(320px, 1fr)); gap: 40px;">
+      <div class="carrossel">
+        <div id="resultados-grid">
 <?php foreach (resultados_home($c) as $item): ?>
-
-        <div style="position:relative;">
-<?php parcial('comparador', ['item' => $item]); ?>
-          <p style="font-size:16px; color:#5C4A40; margin:16px 0 0; text-align:center;"><?= e($item['titulo']) ?></p>
-        </div>
+          <figure style="margin:0;">
+<?php parcial('comparador', ['item' => $item, 'novo' => true]); ?>
+            <figcaption class="res-legenda"><?= e($item['titulo']) ?></figcaption>
+          </figure>
 <?php endforeach; ?>
-
-        <div id="ver-mais-cell" style="position:relative; height:100%;">
-          <div style="position:relative; width:100%; aspect-ratio:3/4;">
-            <a href="resultados.html" class="btn-fill" style="position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); display: flex; align-items: center; gap: 10px; text-decoration: none; color: #FBF3EE; font-weight: 700; font-size: 34px; white-space: nowrap; background: #996C55; border-radius: 14px; padding: 10px 22px; transition: background 0.2s ease;">
-              <?= e($h['resultados']['texto_ver_mais']) ?>
-
-              <?= $seta_ver_mais(24) ?>
-
-            </a>
-          </div>
         </div>
-
+        <div class="carrossel-ctl">
+          <button type="button" class="mobile-scroll-arrow" onclick="scrollByCard('resultados-grid', -1)" aria-label="Ver resultados anteriores"><?= $seta_esq ?></button>
+          <span class="carrossel-contador" data-grid="resultados-grid"></span>
+          <button type="button" class="mobile-scroll-arrow" onclick="scrollByCard('resultados-grid', 1)" aria-label="Ver mais resultados"><?= $seta_dir ?></button>
+        </div>
       </div>
-      <button type="button" class="mobile-scroll-arrow" onclick="scrollByCard('resultados-grid', -1)" aria-label="Ver resultados anteriores" style="display:none; position:absolute; left:-6px; top:50%; transform:translateY(-50%); width:44px; height:44px; border-radius:50%; background:#7D5843; border:none; align-items:center; justify-content:center; box-shadow:0 2px 10px rgba(0,0,0,0.25); cursor:pointer; z-index:2;">
-        <?= $seta_esq_marrom ?>
-
-      </button>
-      <button type="button" class="mobile-scroll-arrow" onclick="scrollByCard('resultados-grid', 1)" aria-label="Ver mais resultados" style="display:none; position:absolute; right:-6px; top:50%; transform:translateY(-50%); width:44px; height:44px; border-radius:50%; background:#7D5843; border:none; align-items:center; justify-content:center; box-shadow:0 2px 10px rgba(0,0,0,0.25); cursor:pointer; z-index:2;">
-        <?= $seta_dir_marrom ?>
-
-      </button>
-      <span class="carrossel-contador" data-grid="resultados-grid"></span>
-      </div>
-      <a id="ver-mais-mobile" href="resultados.html" style="display:none; margin-top:48px; align-items:center; justify-content:center; gap:10px; text-decoration:none; color:#FBF3EE; font-weight:700; font-size:18px; background:#7D5843; border-radius:14px; padding:14px 22px;">
-        <?= e($h['resultados']['texto_ver_mais']) ?>
-
-        <?= $seta_ver_mais(20) ?>
-
-      </a>
+      <a id="ver-mais-mobile" class="btn btn-marrom" href="resultados.html"><?= e($h['resultados']['texto_ver_mais']) ?><?= $seta_ver_mais ?></a>
     </div>
   </section>
 
-  <section id="cursos" class="reveal" style="padding: 110px 5% 130px; background:#F3E4DA; box-sizing:border-box;">
-    <div style="max-width:1080px; margin:0 auto;">
-      <p style="font-size:13px; letter-spacing:0.15em; text-transform:uppercase; color:#7D5843; font-weight:700; margin:0 0 14px; text-align:center;"><?= e($h['cursos']['rotulo']) ?></p>
-      <h2 style="font-family:'Marcellus', serif; font-size: clamp(30px, 3vw, 42px); margin: 0 0 16px; color:#3A2A22; text-align:center;"><?= e($h['cursos']['titulo']) ?></h2>
-      <p style="font-size:17px; color:#5C4A40; text-align:center; max-width:560px; margin: 0 auto 60px;"><?= e($h['cursos']['descricao']) ?></p>
-
-      <div style="display:flex; flex-direction:column; gap:28px;">
+  <section id="cursos" class="cursos reveal">
+    <div class="contem">
+      <div class="cursos-topo">
+        <div>
+          <p class="rotulo"><?= e($h['cursos']['rotulo']) ?></p>
+          <h2><?= e($h['cursos']['titulo']) ?></h2>
+          <p class="cursos-desc"><?= e($h['cursos']['descricao']) ?></p>
+        </div>
+      </div>
+      <div class="cursos-lista">
 <?php foreach ($h['cursos']['itens'] as $curso): ?>
-        <div style="background:#FBF3EE; border-radius:20px; padding: 40px 44px; box-shadow: 0 2px 24px rgba(58,42,34,0.06);">
-          <div style="display:flex; justify-content:space-between; align-items:flex-start; gap:24px; flex-wrap:wrap;">
+        <div class="curso">
+          <div class="curso-cab">
             <div>
-              <h3 style="font-family:'Marcellus', serif; font-size:26px; margin:0 0 8px; color:#3A2A22;"><?= e($curso['titulo']) ?></h3>
-              <p style="font-size:15px; color:#7D5843; font-weight:700; margin:0 0 16px; letter-spacing:0.02em;"><?= e($curso['carga_horaria']) ?></p>
-              <p style="font-size:16px; line-height:1.7; color:#5C4A40; margin:0; max-width:560px;"><?= e($curso['descricao']) ?></p>
+              <h3><?= e($curso['titulo']) ?></h3>
+              <p class="curso-carga"><?= e($curso['carga_horaria']) ?></p>
+              <p class="curso-desc"><?= e($curso['descricao']) ?></p>
             </div>
-            <div style="display:flex; flex-direction:column; gap:10px; min-width:220px;">
-              <a href="<?= e(link_whatsapp($ct, $curso['mensagem_whatsapp'])) ?>" target="_blank" rel="noopener" class="btn-fill" style="text-decoration:none; text-align:center; background:#7D5843; color:#FBF3EE; padding:13px 24px; border-radius:10px; font-weight:700; font-size:15px; transition: background 0.2s ease;">Chamar no WhatsApp</a>
-              <button type="button" onclick="toggleCurso('<?= e($curso['id']) ?>', this)" aria-expanded="false" aria-controls="<?= e($curso['id']) ?>" class="curso-outline" style="cursor:pointer; background:transparent; border:1.5px solid #7D5843; color:#7D5843; padding:13px 24px; border-radius:10px; font-weight:700; font-size:15px; font-family:inherit; transition: background 0.2s ease;">Ver descrição completa</button>
+            <div class="curso-acoes">
+              <a href="<?= e(link_whatsapp($ct, $curso['mensagem_whatsapp'])) ?>" target="_blank" rel="noopener" class="btn btn-marrom">Chamar no WhatsApp</a>
+              <button type="button" onclick="toggleCurso('<?= e($curso['id']) ?>', this)" aria-expanded="false" aria-controls="<?= e($curso['id']) ?>" class="btn btn-contorno">Ver descrição completa</button>
             </div>
           </div>
-          <div id="<?= e($curso['id']) ?>" style="display:none; margin-top:32px; padding-top:32px; border-top:1px solid #E7CDBE; grid-template-columns: 1fr 1fr; gap:40px;">
+          <div id="<?= e($curso['id']) ?>" class="curso-detalhe" style="display:none;">
             <div>
-              <h4 style="font-family:'Marcellus', serif; font-size:16px; margin:0 0 14px; color:#3A2A22;">Conteúdo programático</h4>
-              <ul style="margin:0; padding-left:18px; color:#5C4A40; font-size:15.5px; line-height:1.9;">
+              <h4>Conteúdo programático</h4>
+              <ul>
 <?php foreach ($curso['conteudo'] as $li): ?>
                 <li><?= e($li) ?></li>
 <?php endforeach; ?>
               </ul>
             </div>
             <div>
-              <h4 style="font-family:'Marcellus', serif; font-size:16px; margin:0 0 14px; color:#3A2A22;">Módulos</h4>
-              <ul style="margin:0; padding-left:18px; color:#5C4A40; font-size:15.5px; line-height:1.9;">
+              <h4>Módulos</h4>
+              <ul>
 <?php foreach ($curso['modulos'] as $li): ?>
                 <li><?= e($li) ?></li>
 <?php endforeach; ?>
@@ -202,79 +190,67 @@ parcial('estilo-home');
     </div>
   </section>
 
-  <section id="depoimentos" class="reveal" style="padding: 110px 5%; box-sizing:border-box;">
-    <div style="max-width:1280px; margin:0 auto;">
-      <p style="font-size:13px; letter-spacing:0.15em; text-transform:uppercase; color:#7D5843; font-weight:700; margin:0 0 14px; text-align:center;"><?= e($h['depoimentos']['rotulo']) ?></p>
-      <h2 style="font-family:'Marcellus', serif; font-size: clamp(30px, 3vw, 42px); margin: 0 0 56px; color:#3A2A22; text-align:center;"><?= e($h['depoimentos']['titulo']) ?></h2>
-      <div class="carrossel" style="position:relative;">
-      <div id="depoimentos-grid" style="display:flex; overflow-x:auto; scroll-snap-type:x proximity; -webkit-overflow-scrolling:touch; gap: 32px; padding-bottom:8px; user-select:none;">
-<?php foreach ($h['depoimentos']['itens'] as $dep): ?>
-        <div style="background:#F3E4DA; padding: 36px 32px; border-radius:20px; display:flex; flex-direction:column; height:100%; box-sizing:border-box; flex:0 0 340px; scroll-snap-align:start;">
-          <div style="display:flex; gap:4px; margin:0 0 18px;">
-<?php for ($i = 0; $i < 5; $i++): ?>
-            <?= $estrela ?>
-
-<?php endfor; ?>
-          </div>
-          <p style="font-size:16.5px; line-height:1.8; color:#4A3A32; margin:0 0 24px; font-style:italic;"><?= e($dep['texto']) ?></p>
-          <div style="margin-top:auto;">
-            <p style="margin:0; font-weight:700; font-size:15.5px; color:#3A2A22;"><?= e($dep['autor']) ?></p>
-            <p style="margin:2px 0 0; font-size:14px; color:#7D5843;"><?= e($dep['servico']) ?></p>
-          </div>
-        </div>
-<?php endforeach; ?>
+  <section id="depoimentos" class="dep reveal">
+    <div class="contem">
+      <div class="dep-topo">
+        <p class="rotulo"><?= e($h['depoimentos']['rotulo']) ?></p>
+        <h2><?= e($h['depoimentos']['titulo']) ?></h2>
       </div>
-      <button id="depoimentos-arrow-left" type="button" onclick="scrollByCard('depoimentos-grid', -1)" aria-label="Ver depoimentos anteriores" style="display:flex; position:absolute; left:-56px; top:50%; transform:translateY(-50%); width:44px; height:44px; border-radius:50%; background:#FBF3EE; border:none; align-items:center; justify-content:center; box-shadow:0 2px 10px rgba(0,0,0,0.25); cursor:pointer; z-index:2;">
-        <?= $seta_esq ?>
-
-      </button>
-      <button id="depoimentos-arrow-right" type="button" onclick="scrollByCard('depoimentos-grid', 1)" aria-label="Ver mais depoimentos" style="display:flex; position:absolute; right:-56px; top:50%; transform:translateY(-50%); width:44px; height:44px; border-radius:50%; background:#FBF3EE; border:none; align-items:center; justify-content:center; box-shadow:0 2px 10px rgba(0,0,0,0.25); cursor:pointer; z-index:2;">
-        <?= $seta_dir ?>
-
-      </button>
-      <span class="carrossel-contador" data-grid="depoimentos-grid"></span>
+      <div class="carrossel">
+        <div id="depoimentos-grid">
+<?php foreach ($h['depoimentos']['itens'] as $dep): ?>
+          <figure class="dep-item" style="margin:0;">
+            <div class="dep-estrelas" aria-hidden="true"><?= str_repeat($estrela, 5) ?></div>
+            <blockquote class="dep-texto" style="margin:0;"><?= e($dep['texto']) ?></blockquote>
+            <figcaption class="dep-autor"><b><?= e($dep['autor']) ?></b><span><?= e($dep['servico']) ?></span></figcaption>
+          </figure>
+<?php endforeach; ?>
+        </div>
+        <div class="carrossel-ctl">
+          <button id="depoimentos-arrow-left" type="button" onclick="scrollByCard('depoimentos-grid', -1)" aria-label="Ver depoimentos anteriores"><?= $seta_esq ?></button>
+          <span class="carrossel-contador" data-grid="depoimentos-grid"></span>
+          <button id="depoimentos-arrow-right" type="button" onclick="scrollByCard('depoimentos-grid', 1)" aria-label="Ver mais depoimentos"><?= $seta_dir ?></button>
+        </div>
       </div>
     </div>
   </section>
 
-  <section id="contato" class="reveal" style="padding: 110px 5% 90px; background:#F3E4DA; box-sizing:border-box;">
-    <div style="max-width:1150px; margin:0 auto; display:grid; grid-template-columns: 1fr 1fr; gap:72px; align-items:center;" id="contato-grid">
-      <div style="margin-left: 48px;">
-        <p style="font-size:13px; letter-spacing:0.15em; text-transform:uppercase; color:#7D5843; font-weight:700; margin:0 0 14px;"><?= e($h['contato_secao']['rotulo']) ?><br></p>
-        <h2 style="font-family:'Marcellus', serif; font-size: clamp(30px, 3vw, 42px); margin: 0 0 28px; color:#3A2A22;"><?= e($h['contato_secao']['titulo']) ?></h2>
-        <a href="<?= e($wa) ?>" target="_blank" rel="noopener" class="btn-fill btn-lift" style="text-decoration:none; display:inline-flex; align-items:center; gap:10px; background:#7D5843; color:#FBF3EE; padding:18px 34px; border-radius:10px; font-weight:700; font-size:17px; margin-bottom:44px; transition: background 0.2s ease, transform 0.2s ease;"><?= e($h['hero']['botao_principal']) ?></a>
-
-        <div style="display:flex; flex-direction:column; gap:26px;">
-          <div>
-            <div style="display:flex; gap:10px; align-items:center; margin:0 0 8px;">
-              <?= $icone_pino ?>
-
-              <p style="font-size:12.5px; letter-spacing:0.1em; text-transform:uppercase; color:#7D5843; font-weight:700; margin:0;">Endereço</p>
+  <section id="contato" class="contato reveal">
+    <div class="contem contato-grade" id="contato-grid">
+      <div class="contato-info">
+        <p class="rotulo rotulo-claro"><?= e($h['contato_secao']['rotulo']) ?></p>
+        <h2><?= e($h['contato_secao']['titulo']) ?></h2>
+        <a href="<?= e($wa) ?>" target="_blank" rel="noopener" class="btn btn-claro btn-principal"><?= e($hero['botao_principal']) ?></a>
+        <div class="contato-dados">
+          <div class="contato-dado">
+            <?= $icone_pino ?>
+            <div>
+              <h3>Endereço</h3>
+              <p><?= implode('<br>', array_map('e', $ct['endereco_linhas'])) ?></p>
             </div>
-            <p style="font-size:16.5px; line-height:1.7; color:#5C4A40; margin:0;"><?= implode('<br>', array_map('e', $ct['endereco_linhas'])) ?></p>
           </div>
-          <div>
-            <div style="display:flex; gap:10px; align-items:center; margin:0 0 8px;">
-              <?= $icone_relogio ?>
-
-              <p style="font-size:12.5px; letter-spacing:0.1em; text-transform:uppercase; color:#7D5843; font-weight:700; margin:0;">Horário de atendimento</p>
+          <div class="contato-dado">
+            <?= $icone_relogio ?>
+            <div>
+              <h3>Horário de atendimento</h3>
+              <p><?= e($ct['horario']) ?></p>
             </div>
-            <p style="font-size:16.5px; line-height:1.7; color:#5C4A40; margin:0;"><?= e($ct['horario']) ?></p>
           </div>
-          <div>
-            <div style="display:flex; gap:10px; align-items:center; margin:0 0 8px;">
-              <?= $icone_insta ?>
-
-              <p style="font-size:12.5px; letter-spacing:0.1em; text-transform:uppercase; color:#7D5843; font-weight:700; margin:0;">Instagram</p>
+          <div class="contato-dado">
+            <?= $icone_insta ?>
+            <div>
+              <h3>Instagram</h3>
+              <a href="https://instagram.com/<?= e($ct['instagram_usuario']) ?>" target="_blank" rel="noopener">@<?= e($ct['instagram_usuario']) ?></a>
             </div>
-            <a href="https://instagram.com/<?= e($ct['instagram_usuario']) ?>" target="_blank" rel="noopener" style="font-size:16.5px; color:#5C4A40; text-decoration:none; font-weight:600;">@<?= e($ct['instagram_usuario']) ?></a>
           </div>
-          <a id="avaliacao-online-link" href="<?= e($ct['avaliacao_online']) ?>" target="_blank" rel="noopener" class="btn-outline-brown" style="text-decoration:none; display:inline-flex; align-items:center; gap:10px; background:transparent; border:1.5px solid #7D5843; color:#7D5843; padding:14px 28px; border-radius:10px; font-weight:700; font-size:16px; align-self:flex-start; transition: background 0.2s ease;">Avaliação Online</a>
+          <div class="contato-dado">
+            <a id="avaliacao-online-link" class="btn btn-contorno-claro contato-avaliacao" href="<?= e($ct['avaliacao_online']) ?>" target="_blank" rel="noopener">Avaliação Online</a>
+          </div>
         </div>
       </div>
-      <div style="position:relative; width:100%; border-radius:20px; overflow:hidden; min-height:360px;">
-        <iframe src="<?= e($ct['maps_embed']) ?>" title="Localização do Studio Gabriela Santos" style="position:absolute; inset:0; width:100%; height:100%; border:0;" loading="lazy" referrerpolicy="no-referrer-when-downgrade"></iframe>
-        <a href="<?= e($ct['maps_link']) ?>" target="_blank" rel="noopener" class="btn-fill" style="position:absolute; bottom:16px; left:16px; text-decoration:none; background:#7D5843; color:#FBF3EE; padding:11px 20px; border-radius:10px; font-weight:700; font-size:13px; transition: background 0.2s ease;">Abrir no Google Maps</a>
+      <div class="contato-mapa">
+        <iframe src="<?= e($ct['maps_embed']) ?>" title="Localização do Studio Gabriela Santos" loading="lazy" referrerpolicy="no-referrer-when-downgrade"></iframe>
+        <a href="<?= e($ct['maps_link']) ?>" target="_blank" rel="noopener" class="btn btn-claro">Abrir no Google Maps</a>
       </div>
     </div>
   </section>
