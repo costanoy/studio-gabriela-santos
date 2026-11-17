@@ -200,6 +200,27 @@
     /*CARTOES*/
   ];
 
+  // Ícones de linha (SVG criado pelo DOM, compatível com a CSP)
+  var ICONES = {
+    site: ['M12 3a9 9 0 1 0 0 18a9 9 0 0 0 0-18z', 'M3 12h18', 'M12 3c2.5 2.6 3.8 5.6 3.8 9s-1.3 6.4-3.8 9c-2.5-2.6-3.8-5.6-3.8-9s1.3-6.4 3.8-9z'],
+    textos: ['M4 20h4L19 9l-4-4L4 16v4z', 'M13.5 6.5l4 4'],
+    fotos: ['M4 5h16v14H4z', 'M4 16l5-5 4 4 3-3 4 4', 'M9 9.5a1 1 0 1 0 0.01 0'],
+    versoes: ['M12 3a9 9 0 1 0 0 18a9 9 0 0 0 0-18z', 'M12 7v5l3 2'],
+    ajuda: ['M12 3a9 9 0 1 0 0 18a9 9 0 0 0 0-18z', 'M9.5 9.5a2.5 2.5 0 1 1 3.5 2.3c-.7.4-1 .9-1 1.7', 'M12 17h.01'],
+    lixeira: ['M4 7h16', 'M9 7V4h6v3', 'M6 7l1 13h10l1-13', 'M10 11v5', 'M14 11v5']
+  };
+  function icone(nome) {
+    var NS = 'http://www.w3.org/2000/svg';
+    var s = document.createElementNS(NS, 'svg');
+    s.setAttribute('viewBox', '0 0 24 24'); s.setAttribute('width', '28'); s.setAttribute('height', '28');
+    s.setAttribute('fill', 'none'); s.setAttribute('stroke', '#7D5843'); s.setAttribute('stroke-width', '1.5');
+    s.setAttribute('stroke-linecap', 'round'); s.setAttribute('stroke-linejoin', 'round');
+    (ICONES[nome] || []).forEach(function (d) {
+      var p = document.createElementNS(NS, 'path'); p.setAttribute('d', d); s.appendChild(p);
+    });
+    return s;
+  }
+
   TELAS.home = function (raiz) {
     raiz.appendChild(h('header', { class: 'topo' },
       h('h1', { text: 'Painel do site' }),
@@ -245,7 +266,9 @@
         ? h('a', { class: 'cartao', href: c.href, target: c.alvo || null, rel: c.alvo ? 'noopener' : null })
         : h('button', { class: 'cartao', type: 'button', on: { click: c.ir } });
       el.id = c.id;
-      el.appendChild(h('span', { class: 'cartao-icone', text: c.icone, attrs: { 'aria-hidden': 'true' } }));
+      var ic = h('span', { class: 'cartao-icone', attrs: { 'aria-hidden': 'true' } });
+      ic.appendChild(icone(c.icone));
+      el.appendChild(ic);
       el.appendChild(h('span', { class: 'cartao-titulo', text: c.titulo }));
       el.appendChild(h('span', { class: 'cartao-texto', text: c.texto }));
       grade.appendChild(el);
@@ -259,7 +282,7 @@
     api('sair').then(function () { location.href = './'; });
   }
 
-  CARTOES.push({ id: 'cartao-site', icone: '🌐', titulo: 'Ver o site', texto: 'Abre o site como os clientes veem', href: '../', alvo: '_blank' });
+  CARTOES.push({ id: 'cartao-site', icone: 'site', titulo: 'Ver o site', texto: 'Abre o site como os clientes veem', href: '../', alvo: '_blank' });
 
   // ---------------------------------------------------------------------------
   // Dados: ler e escrever por caminho ("home.hero.titulo", "resultados.itens.2.titulo")
@@ -689,7 +712,7 @@
     raiz.appendChild(corpo);
     raiz.appendChild(barraAcao('Salvar no site'));
   };
-  CARTOES.push({ id: 'cartao-textos', icone: '✏️', titulo: 'Textos', texto: 'Títulos, parágrafos, horário e contato', ir: function () { ir('textos'); } });
+  CARTOES.push({ id: 'cartao-textos', icone: 'textos', titulo: 'Textos', texto: 'Títulos, parágrafos, horário e contato', ir: function () { ir('textos'); } });
 
   // ---------------------------------------------------------------------------
   // Resultados: lista, ordem e edição (P2, L09)
@@ -918,7 +941,7 @@
     raiz.appendChild(corpo);
     raiz.appendChild(barraAcao('Salvar no site'));
   };
-  CARTOES.push({ id: 'cartao-resultados', icone: '🖼️', titulo: 'Antes e depois', texto: 'Fotos, vídeos, ordem e enquadramento', ir: function () { ir('resultados'); } });
+  CARTOES.push({ id: 'cartao-resultados', icone: 'fotos', titulo: 'Antes e depois', texto: 'Fotos, vídeos, ordem e enquadramento', ir: function () { ir('resultados'); } });
 
   // --- Novo antes e depois / novo vídeo ---
   function iniciarNovo(tipo) {
@@ -1421,7 +1444,7 @@
       });
     });
   };
-  CARTOES.push({ id: 'cartao-versoes', icone: '🕘', titulo: 'Versões', texto: 'Voltar para como o site estava antes', ir: function () { ir('versoes'); } });
+  CARTOES.push({ id: 'cartao-versoes', icone: 'versoes', titulo: 'Versões', texto: 'Voltar para como o site estava antes', ir: function () { ir('versoes'); } });
 
   // ---------------------------------------------------------------------------
   // Apagar (P3) e lixeira
@@ -1526,8 +1549,8 @@
       });
     });
   };
-  CARTOES.push({ id: 'cartao-ajuda', icone: '❓', titulo: 'Ajuda', texto: 'Passo a passo para usar o painel', href: 'ajuda.php' });
-  CARTOES.push({ id: 'cartao-lixeira', icone: '🗑️', titulo: 'Lixeira', texto: 'Trazer de volta fotos e vídeos', ir: function () { ir('lixeira'); } });
+  CARTOES.push({ id: 'cartao-ajuda', icone: 'ajuda', titulo: 'Ajuda', texto: 'Passo a passo para usar o painel', href: 'ajuda.php' });
+  CARTOES.push({ id: 'cartao-lixeira', icone: 'lixeira', titulo: 'Lixeira', texto: 'Trazer de volta fotos e vídeos', ir: function () { ir('lixeira'); } });
 
   // ---------------------------------------------------------------------------
   // Diagnóstico de IP (T10): para o Vinicius conferir de onde o painel enxerga o acesso
