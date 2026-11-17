@@ -494,17 +494,17 @@ test.describe('L07 conteudo', () => {
     console.log('L07 formas do horario:', JSON.stringify(formas));
     expect(formas.length).toBe(1);
   });
-  test('L07 categoria Corrente Fortalecedora (2 videos) fica centralizada no desktop', async ({ page }, ti) => {
+  test('L07 categoria Corrente Fortalecedora (2 videos) fica alinhada a esquerda no desktop', async ({ page }, ti) => {
     test.skip(isMobile(ti), 'desktop');
     await page.goto('/resultados.html');
     const r = await page.evaluate(() => {
       const h = [...document.querySelectorAll('h2')].find((x) => /Corrente/.test(x.textContent));
       const grid = h.parentElement.querySelector('.rc-grid'); const kids = [...grid.children];
       const g = grid.getBoundingClientRect(); const a = kids[0].getBoundingClientRect(), b = kids[kids.length - 1].getBoundingClientRect();
-      return { n: kids.length, centroGrade: (g.left + g.right) / 2, centroItens: (a.left + b.right) / 2 };
+      return { n: kids.length, desvioEsq: a.left - g.left };
     });
     console.log('L07 Corrente', JSON.stringify(r));
     expect(r.n).toBe(2);
-    expect(Math.abs(r.centroGrade - r.centroItens)).toBeLessThan(4);
+    expect(Math.abs(r.desvioEsq)).toBeLessThan(4);
   });
 });

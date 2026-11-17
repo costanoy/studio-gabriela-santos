@@ -82,7 +82,7 @@ parcial('estilo-base');
 .curso { background: var(--marfim); border: 1px solid var(--linha); border-radius: 4px; padding: 32px 24px; }
 .curso-cab { display: flex; flex-direction: column; gap: 24px; }
 .curso h3 { font-size: 30px; line-height: 1.1; }
-.curso-carga { margin-bottom: 8px; font: 700 12px/1.2 var(--sem-serifa); letter-spacing: .14em; text-transform: uppercase; color: var(--marrom-claro); }
+.curso-carga { margin-bottom: 8px; font: 700 12px/1.2 var(--sem-serifa); letter-spacing: .14em; text-transform: uppercase; color: var(--marrom); }
 .curso-desc { margin-top: 16px; max-width: 56ch; font-size: 16px; line-height: 1.7; color: var(--texto); }
 .curso-acoes { display: flex; flex-direction: column; gap: 12px; }
 .curso-toggle { display: inline-flex; align-items: center; justify-content: center; gap: 8px; min-height: 44px; padding: 0; border: 0; background: transparent; cursor: pointer; color: var(--marrom); font: 700 13px/1 var(--sem-serifa); letter-spacing: .14em; text-transform: uppercase; }
