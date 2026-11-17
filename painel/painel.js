@@ -865,16 +865,25 @@
     if (!lista.length) caixa.appendChild(h('p', { class: 'vazio', text: 'Nada por aqui ainda.' }));
     lista.forEach(function (item, n) {
       var foto = item.tipo === 'comparacao' ? item.depois.arquivo : item.tipo === 'video' ? item.poster : item.arquivo;
-      var linha = h('div', { class: 'linha-res', attrs: { 'data-id': item.id } },
+      var ordenavel = S.aba !== 'fora';
+      var acoes = h('div', { class: 'acoes-item' },
+        h('button', { class: 'botao', type: 'button', text: 'Editar', attrs: { 'aria-label': 'Editar ' + nomeItem(item) }, on: { click: function () { ir('item', { id: item.id, lado: 'depois' }); } } }));
+      if (ordenavel) {
+        var sobe = botaoPequeno('↑ Subir', function () { mover(item, -1); }, 'Subir ' + nomeItem(item));
+        var desce = botaoPequeno('↓ Descer', function () { mover(item, 1); }, 'Descer ' + nomeItem(item));
+        sobe.disabled = n === 0;
+        desce.disabled = n === lista.length - 1;
+        acoes.appendChild(sobe);
+        acoes.appendChild(desce);
+      } else {
+        acoes.classList.add('so-editar');
+      }
+      var linha = h('div', { class: 'linha-res com-acoes', attrs: { 'data-id': item.id } },
         h('img', { class: 'miniatura', src: urlFoto(foto), alt: '' }),
         h('div', { class: 'linha-res-corpo' },
           h('strong', { text: nomeItem(item) }),
-          h('span', { class: 'dica', text: TIPOS[item.tipo] + ' · ' + nomeCategoria(item.categoria) + (S.aba === 'home' && n >= LIMITE_HOME ? ' · não aparece (só ' + LIMITE_HOME + ')' : '') }),
-          h('div', { class: 'linha-botoes' },
-            h('button', { class: 'botao', type: 'button', text: 'Editar', attrs: { 'aria-label': 'Editar ' + nomeItem(item) }, on: { click: function () { ir('item', { id: item.id, lado: 'depois' }); } } }),
-            S.aba !== 'fora' && n > 0 ? botaoPequeno('↑ Subir', function () { mover(item, -1); }, 'Subir ' + nomeItem(item)) : null,
-            S.aba !== 'fora' && n < lista.length - 1 ? botaoPequeno('↓ Descer', function () { mover(item, 1); }, 'Descer ' + nomeItem(item)) : null,
-            h('button', { class: 'botao botao-apagar', type: 'button', text: 'Apagar', attrs: { 'aria-label': 'Apagar ' + nomeItem(item) }, on: { click: function () { apagarItem(item); } } }))));
+          h('span', { class: 'dica', text: TIPOS[item.tipo] + ' · ' + nomeCategoria(item.categoria) + (S.aba === 'home' && n >= LIMITE_HOME ? ' · não aparece (só ' + LIMITE_HOME + ')' : '') })),
+        acoes);
       caixa.appendChild(linha);
     });
     corpo.appendChild(caixa);
@@ -1219,8 +1228,10 @@
       } } }));
       corpo.appendChild(progresso);
     }
-    corpo.appendChild(h('h2', { text: 'Apagar' }));
-    corpo.appendChild(h('button', { class: 'botao botao-apagar botao-bloco', type: 'button', id: 'apagar-item', text: 'Apagar ' + (comp ? 'este antes e depois' : item.tipo === 'video' ? 'este vídeo' : 'esta foto'), on: { click: function () { apagarItem(item); } } }));
+    var zona = h('section', { class: 'zona-apagar' });
+    zona.appendChild(h('h2', { text: 'Apagar' }));
+    zona.appendChild(h('button', { class: 'botao botao-perigo botao-bloco', type: 'button', id: 'apagar-item', text: 'Apagar ' + (comp ? 'este antes e depois' : item.tipo === 'video' ? 'este vídeo' : 'esta foto'), on: { click: function () { apagarItem(item); } } }));
+    corpo.appendChild(zona);
     raiz.appendChild(corpo);
     raiz.appendChild(barraAcao('Salvar no site'));
   };

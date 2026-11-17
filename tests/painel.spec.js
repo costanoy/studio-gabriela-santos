@@ -416,6 +416,28 @@ test.describe('P2 resultados e enquadramento', () => {
     expect(por('cmp-liposhape-1').ordem_home).toBe(2);
   });
 
+  test('V2: a lista tem Editar, Subir e Descer sempre nas mesmas posições; no primeiro e no último o que não serve fica desabilitado', async ({ page }) => {
+    await entrar(page);
+    await page.click('#cartao-resultados');
+    const linhas = page.locator('#lista-resultados .linha-res');
+    const total = await linhas.count();
+    expect(total).toBeGreaterThan(1);
+    const posicoes = [];
+    for (let i = 0; i < total; i++) {
+      const bs = linhas.nth(i).locator('.acoes-item .botao');
+      await expect(bs).toHaveCount(3);
+      await expect(bs.nth(0)).toHaveText('Editar');
+      await expect(bs.nth(1)).toContainText('Subir');
+      await expect(bs.nth(2)).toContainText('Descer');
+      await expect(linhas.nth(i).getByRole('button', { name: /^Apagar/ })).toHaveCount(0);
+      const caixas = await bs.evaluateAll((l) => l.map((b) => { const r = b.getBoundingClientRect(); return Math.round(r.left - b.closest('.linha-res').getBoundingClientRect().left); }));
+      posicoes.push(caixas.join(','));
+      if (i === 0) await expect(bs.nth(1)).toBeDisabled(); else await expect(bs.nth(1)).toBeEnabled();
+      if (i === total - 1) await expect(bs.nth(2)).toBeDisabled(); else await expect(bs.nth(2)).toBeEnabled();
+    }
+    expect(new Set(posicoes).size).toBe(1);
+  });
+
   test('aba da página de resultados filtra por categoria', async ({ page }) => {
     await entrar(page);
     await page.click('#cartao-resultados');
@@ -605,12 +627,15 @@ test.describe('P3 apagar e lixeira', () => {
     const linha = page.locator('#lista-resultados .linha-res').first();
     const id = await linha.getAttribute('data-id');
     const nome = await linha.locator('strong').innerText();
-    await linha.getByRole('button', { name: /^Apagar/ }).click();
+    // V2: a lista não tem Apagar; ele só existe dentro de Editar
+    await expect(linha.getByRole('button', { name: /^Apagar/ })).toHaveCount(0);
+    await linha.getByRole('button', { name: /^Editar/ }).click();
+    await page.click('#apagar-item');
     await expect(page.locator('.modal')).toContainText(nome);
     await page.click('#modal-cancelar');
     expect((await chamar(page, { acao: 'ler' })).conteudo.resultados.itens.length).toBe(antes.length);
 
-    await linha.getByRole('button', { name: /^Apagar/ }).click();
+    await page.click('#apagar-item');
     await page.click('#modal-ok');
     await expect(page.locator('.toast')).toContainText('foi apagado');
     await expect(page.locator('.linha-res[data-id="' + id + '"]')).toHaveCount(0);

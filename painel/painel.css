@@ -175,6 +175,12 @@ body.login { min-height: 100vh; display: flex; align-items: center; justify-cont
 .lista-resultados { margin: 12px 0; }
 .vazio { padding: 18px; text-align: center; color: var(--suave); background: var(--branco); border: 2px dashed var(--borda); border-radius: 14px; }
 .linha-res { display: flex; gap: 12px; background: var(--branco); border: 2px solid var(--areia); border-radius: 16px; padding: 10px; margin: 0 0 10px; }
+.linha-res.com-acoes { flex-wrap: wrap; }
+.acoes-item { flex: 1 0 100%; display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 8px; }
+.acoes-item.so-editar { grid-template-columns: minmax(0, 1fr); }
+.acoes-item .botao { padding: 10px 4px; font-size: 16px; white-space: nowrap; }
+.zona-apagar { margin: 40px 0 8px; padding-top: 20px; border-top: 2px solid var(--erro); }
+.zona-apagar h2 { color: var(--erro); }
 .linha-res-corpo { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 4px; }
 .linha-res-corpo strong { overflow-wrap: anywhere; }
 .miniatura { width: 72px; height: 96px; object-fit: cover; border-radius: 10px; background: var(--areia); flex: none; }
