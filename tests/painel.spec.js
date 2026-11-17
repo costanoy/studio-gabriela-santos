@@ -428,6 +428,25 @@ test.describe('P2 resultados e enquadramento', () => {
     await expect(page.locator('#foto-sobreposta')).toBeHidden();
   });
 
+  test('V7: sem mudanças o botão diz "Nada para salvar" com contraste de pelo menos 4,5:1', async ({ page }) => {
+    await entrar(page);
+    await page.click('#cartao-resultados');
+    await expect(page.locator('#salvar')).toBeDisabled();
+    await expect(page.locator('#salvar')).toHaveText('Nada para salvar');
+    const razao = await page.locator('#salvar').evaluate((el) => {
+      const lum = (c) => { const [r, g, b] = c.match(/[\d.]+/g).slice(0, 3).map((v) => { v = Number(v) / 255; return v <= 0.03928 ? v / 12.92 : Math.pow((v + 0.055) / 1.055, 2.4); }); return 0.2126 * r + 0.7152 * g + 0.0722 * b; };
+      const cs = getComputedStyle(el);
+      const a = lum(cs.color), b = lum(cs.backgroundColor);
+      return (Math.max(a, b) + 0.05) / (Math.min(a, b) + 0.05) * Number(cs.opacity === '1' ? 1 : 0);
+    });
+    expect(razao).toBeGreaterThanOrEqual(4.5);
+    await page.getByRole('button', { name: 'Descer Liposhape' }).click();
+    await expect(page.locator('#salvar')).toBeEnabled();
+    await expect(page.locator('#salvar')).toHaveText('Salvar no site');
+    await page.click('#salvar');
+    await expect(page.locator('#salvar')).toHaveText('Nada para salvar');
+  });
+
   test('V4: Desfazer ajuste guarda pelo menos 20 passos', async ({ page }) => {
     await entrar(page);
     await abrirItem(page, 'cmp-liposhape-1');

@@ -48,6 +48,7 @@ p { margin: 0 0 12px; }
 .botao-leve { border-color: var(--borda); font-weight: 600; }
 .botao-perigo { background: var(--erro); border-color: var(--erro); color: #fff; }
 .botao[disabled] { opacity: .5; cursor: not-allowed; }
+.botao-principal[disabled] { opacity: 1; background: #E7DCD5; border-color: #E7DCD5; color: #5F4A3E; }
 .botao-bloco { display: flex; width: 100%; }
 a.botao { text-decoration: none; }
 .diagnostico { margin: 12px 0 0; }

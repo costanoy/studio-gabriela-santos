@@ -289,7 +289,9 @@
   // ---------------------------------------------------------------------------
   var barraSalvarEl = null;
   function atualizarBarra() {
-    if (barraSalvarEl) barraSalvarEl.disabled = !S.sujo;
+    if (!barraSalvarEl) return;
+    barraSalvarEl.disabled = !S.sujo;
+    barraSalvarEl.textContent = S.sujo ? 'Salvar no site' : 'Nada para salvar';
   }
   /** Chame sempre que ela mudar algo. $rotulo entra no histórico ("Mudou os textos"). */
   function mudou(rotulo) {
@@ -428,6 +430,7 @@
     var b = h('button', { class: 'botao botao-principal', type: 'button', id: 'salvar', text: texto || 'Salvar no site', on: { click: function () { salvar(); } } });
     barraSalvarEl = b;
     b.disabled = !S.sujo;
+    if (!S.sujo) b.textContent = 'Nada para salvar';
     return h('div', { class: 'barra-acao' }, b);
   }
 
