@@ -637,8 +637,14 @@ test.describe('P3 apagar e lixeira', () => {
 
     await page.click('#apagar-item');
     await page.click('#modal-ok');
-    await expect(page.locator('.toast')).toContainText('foi apagado');
+    // V3: apagar é uma mudança pendente: nada mudou no site até tocar em Salvar no site
+    await expect(page.locator('#aviso-apagados')).toContainText('1 item será apagado');
     await expect(page.locator('.linha-res[data-id="' + id + '"]')).toHaveCount(0);
+    expect((await chamar(page, { acao: 'ler' })).conteudo.resultados.itens.length).toBe(antes.length);
+    await expect(page.locator('#salvar')).toBeEnabled();
+    await page.click('#salvar');
+    await expect(page.locator('.toast')).toContainText('foi apagado');
+    await expect(page.locator('#aviso-apagados')).toHaveCount(0);
     let depois = (await chamar(page, { acao: 'ler' })).conteudo.resultados.itens;
     expect(depois.length).toBe(antes.length - 1);
     expect(depois.some((i) => i.id === id)).toBe(false);
@@ -660,6 +666,58 @@ test.describe('P3 apagar e lixeira', () => {
     await page.click('#modal-ok');
     await expect(page.locator('#lista-resultados')).toBeVisible();
     await expect(page.locator('.linha-res[data-id="' + id + '"]')).toHaveCount(0);
+    await expect(page.locator('#aviso-apagados')).toContainText('1 item será apagado');
+  });
+
+  test('V3: "Não apagar" tira a marca e o item volta; sem outra mudança não sobra nada para salvar', async ({ page }) => {
+    await entrar(page);
+    await page.click('#cartao-resultados');
+    const id = await page.locator('#lista-resultados .linha-res').first().getAttribute('data-id');
+    await page.locator('[data-id="' + id + '"]').getByRole('button', { name: /^Editar/ }).click();
+    await page.click('#apagar-item');
+    await page.click('#modal-ok');
+    await expect(page.locator('.linha-res[data-id="' + id + '"]')).toHaveCount(0);
+    await page.getByRole('button', { name: /^Não apagar/ }).click();
+    await expect(page.locator('#aviso-apagados')).toHaveCount(0);
+    await expect(page.locator('.linha-res[data-id="' + id + '"]')).toHaveCount(1);
+    await expect(page.locator('#salvar')).toBeDisabled();
+  });
+
+  test('V3: reordenar, apagar, salvar e desfazer volta tudo de uma vez (ordem e item)', async ({ page }) => {
+    await entrar(page);
+    const lido0 = (await chamar(page, { acao: 'ler' })).conteudo.resultados.itens;
+    const home0 = lido0.filter((i) => i.na_home).sort((a, b) => a.ordem_home - b.ordem_home).map((i) => i.id);
+    expect(home0.length).toBeGreaterThan(2);
+    await page.click('#cartao-resultados');
+    const ids = () => page.locator('#lista-resultados .linha-res').evaluateAll((l) => l.map((x) => x.dataset.id));
+    // 1) reordena: o primeiro desce
+    await page.getByRole('button', { name: /^Descer / }).first().click();
+    expect((await ids()).slice(0, 2)).toEqual([home0[1], home0[0]]);
+    // 2) apaga o terceiro (pelo Editar)
+    const alvo = home0[2];
+    await page.locator('[data-id="' + alvo + '"]').getByRole('button', { name: /^Editar/ }).click();
+    await page.click('#apagar-item');
+    await page.click('#modal-ok');
+    await expect(page.locator('#aviso-apagados')).toContainText('1 item será apagado');
+    expect(await ids()).not.toContain(alvo);
+    // nada foi gravado ainda
+    const meio = await chamar(page, { acao: 'ler' });
+    expect(meio.conteudo.resultados.itens.length).toBe(lido0.length);
+    // 3) salva tudo junto
+    await page.click('#salvar');
+    await expect(page.locator('.toast')).toContainText('foi apagado');
+    const salvo = (await chamar(page, { acao: 'ler' })).conteudo.resultados.itens;
+    expect(salvo.length).toBe(lido0.length - 1);
+    expect(salvo.some((i) => i.id === alvo)).toBe(false);
+    expect(salvo.find((i) => i.id === home0[1]).ordem_home).toBeLessThan(salvo.find((i) => i.id === home0[0]).ordem_home);
+    // 4) desfaz: a ordem e o item voltam
+    await page.locator('.toast').getByRole('button', { name: 'Desfazer' }).click();
+    await expect(page.locator('.toast')).toContainText('Desfeito');
+    const volta = (await chamar(page, { acao: 'ler' })).conteudo.resultados.itens;
+    expect(volta.length).toBe(lido0.length);
+    expect(volta.filter((i) => i.na_home).sort((a, b) => a.ordem_home - b.ordem_home).map((i) => i.id)).toEqual(home0);
+    // a versão guardada tem os dois (ordem e apagar) e a lista na tela também
+    expect(await ids()).toEqual(home0);
   });
 
   test('a lixeira lista o arquivo e Restaurar traz de volta', async ({ page }) => {

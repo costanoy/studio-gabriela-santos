@@ -79,7 +79,8 @@
     tela: 'home',
     arg: null,
     sujo: false,    // há mudanças não salvas
-    resumo: []      // o que mudou (vai para o histórico)
+    resumo: [],     // o que mudou (vai para o histórico)
+    apagados: []    // itens marcados para apagar: saem do site só quando ela toca em Salvar no site
   };
 
   // ---------------------------------------------------------------------------
@@ -215,6 +216,7 @@
               var recuperar = function () {
                 S.c = rasc.c;
                 S.sujo = true;
+                S.apagados = [];
                 S.resumo = ['Recuperou mudanças guardadas'];
                 rascunhoApagar();
                 ir(rasc.tela === 'resultados' ? 'resultados' : 'textos');
@@ -358,8 +360,16 @@
         limparErrosCampos();
         S.c = r.conteudo;
         S.rev = r.revisao;
+        if (typeof textoToast !== 'string' && S.apagados.length) {
+          textoToast = S.apagados.length === 1
+            ? 'Salvo no site. "' + nomeItem(S.apagados[0].item) + '" foi apagado.'
+            : 'Salvo no site. ' + S.apagados.length + ' itens foram apagados.';
+        }
+        var haviaApagados = S.apagados.length > 0;
         S.sujo = false;
         S.resumo = [];
+        S.apagados = [];
+        if (haviaApagados) { var y0 = window.scrollY; desenhar(); window.scrollTo(0, y0); }
         atualizarBarra();
         avisoTopo(null);
         rascunhoApagar();
@@ -385,6 +395,7 @@
             if (!ok) return;
             S.sujo = false;
             S.resumo = [];
+            S.apagados = [];
             S.tela = 'home';
             S.arg = null;
             desenhar();
@@ -834,6 +845,8 @@
     raiz.appendChild(topo('Antes e depois e vídeos', 'home'));
     var corpo = h('main', { id: 'conteudo-tela' });
     corpo.appendChild(h('p', { class: 'dica', text: 'Escolha onde as fotos aparecem. Use Subir e Descer para mudar a ordem.' }));
+    var avisoApag = avisoApagados();
+    if (avisoApag) corpo.appendChild(avisoApag);
 
     var abas = h('div', { class: 'abas', attrs: { role: 'tablist' } });
     ABAS.forEach(function (a) {
@@ -1274,6 +1287,7 @@
         S.rev = r.revisao;
         S.sujo = false;
         S.resumo = [];
+        S.apagados = [];
         desenhar();
         toast(aviso, { texto: 'Desfazer', fazer: function () { restaurarVersao(revAntes, 'Desfeito. O site voltou ao que estava antes.'); } }, 10);
       } else {
@@ -1330,12 +1344,12 @@
   // ---------------------------------------------------------------------------
   // Apagar (P3) e lixeira
   // ---------------------------------------------------------------------------
-  /** Pede confirmação com o nome, tira do site e salva. O aviso Desfazer dura 10 segundos. */
+  /** Pede confirmação com o nome e marca o item para apagar. Ele só sai do site em Salvar no site. */
   function apagarItem(item) {
     var nome = nomeItem(item);
     return confirmar({
       titulo: 'Apagar "' + nome + '"?',
-      texto: 'Ele deixa de aparecer no site. Logo depois de apagar, você pode desfazer.',
+      texto: 'Ele fica marcado para apagar e só sai do site quando você tocar em Salvar no site. Até lá, dá para mudar de ideia.',
       ok: 'Apagar',
       perigo: true
     }).then(function (sim) {
@@ -1344,20 +1358,55 @@
       var pos = lista.indexOf(item);
       if (pos < 0) return null;
       lista.splice(pos, 1);
-      S.resumo.push('Apagou ' + nome);
-      return salvar('"' + nome + '" foi apagado do site.').then(function (r) {
-        if (r && r.ok) {
-          S.tela = 'resultados';
-          S.arg = null;
-          desenhar();
-          window.scrollTo(0, 0);
-        } else {
-          lista.splice(pos, 0, item);
-          S.resumo.pop();
-        }
-        return r;
-      });
+      S.apagados.push({ item: item, pos: pos });
+      mudou('Apagou ' + nome);
+      S.tela = 'resultados';
+      S.arg = null;
+      desenhar();
+      window.scrollTo(0, 0);
+      return { ok: true };
     });
+  }
+
+  /** Tira a marca de "será apagado": o item volta para o lugar e para o fim da ordem se o lugar foi tomado. */
+  function naoApagar(entrada) {
+    var i = S.apagados.indexOf(entrada);
+    if (i < 0) return;
+    S.apagados.splice(i, 1);
+    var item = entrada.item;
+    var lista = itensRes();
+    lista.splice(Math.min(entrada.pos, lista.length), 0, item);
+    [['ordem', function (x) { return x.categoria === item.categoria && x.em_resultados; }],
+     ['ordem_home', function (x) { return x.na_home; }]].forEach(function (par) {
+      var chave = par[0];
+      var ocupado = lista.some(function (x) { return x !== item && par[1](x) && x[chave] === item[chave]; });
+      if (ocupado) item[chave] = proximaOrdem(chave, function (x) { return x !== item && par[1](x); });
+    });
+    var rot = S.resumo.indexOf('Apagou ' + nomeItem(item));
+    if (rot >= 0) S.resumo.splice(rot, 1);
+    if (!S.apagados.length && !S.resumo.length) S.sujo = false;
+    atualizarBarra();
+    var y = window.scrollY;
+    desenhar();
+    window.scrollTo(0, y);
+  }
+
+  /** Faixa "N itens serão apagados" com um botão Não apagar para cada um. */
+  function avisoApagados() {
+    if (!S.apagados.length) return null;
+    var n = S.apagados.length;
+    var lista = h('ul', { class: 'lista-apagados' });
+    S.apagados.forEach(function (e) {
+      lista.appendChild(h('li', {},
+        h('span', { text: '"' + nomeItem(e.item) + '"' }),
+        h('button', { class: 'botao botao-leve', type: 'button', text: 'Não apagar', attrs: { 'aria-label': 'Não apagar ' + nomeItem(e.item) }, on: { click: function () { naoApagar(e); } } })));
+    });
+    return h('div', { class: 'alerta aviso', id: 'aviso-apagados', attrs: { role: 'status' } },
+      h('span', { class: 'alerta-icone', text: '!', attrs: { 'aria-hidden': 'true' } }),
+      h('div', { class: 'alerta-corpo' },
+        h('strong', { text: n === 1 ? '1 item será apagado' : n + ' itens serão apagados' }),
+        h('span', { text: ' quando você tocar em Salvar no site.' }),
+        lista));
   }
 
   function tamanhoLegivel(b) {

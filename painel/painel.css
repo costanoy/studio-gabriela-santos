@@ -221,3 +221,8 @@ body.login { min-height: 100vh; display: flex; align-items: center; justify-cont
 .site-etq { position: absolute; bottom: 44px; color: #FBF3EE; font-size: 11px; letter-spacing: .1em; text-transform: uppercase; padding: 5px 10px; font-weight: 700; z-index: 1; }
 .site-antes { left: 10px; background: rgba(58, 42, 34, .75); }
 .site-depois { right: 10px; background: rgba(153, 108, 85, .9); }
+
+/* Itens marcados para apagar (aguardam o Salvar no site) */
+.lista-apagados { list-style: none; margin: 10px 0 0; padding: 0; }
+.lista-apagados li { display: flex; align-items: center; justify-content: space-between; gap: 10px; margin: 0 0 8px; font-weight: 700; overflow-wrap: anywhere; }
+.lista-apagados .botao { flex: none; margin-top: 0; }
