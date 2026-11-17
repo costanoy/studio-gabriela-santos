@@ -437,6 +437,19 @@ test.describe('P2 resultados e enquadramento', () => {
     await expect(page.locator('body')).toContainText('não aparecem no site');
   });
 
+  test('V10: a grade tem a ordem certa e Diagnóstico virou o link "Para o técnico" no rodapé', async ({ page }) => {
+    await entrar(page);
+    const ids = await page.locator('.cartoes > .cartao').evaluateAll((l) => l.map((x) => x.id));
+    expect(ids).toEqual(['cartao-resultados', 'cartao-textos', 'cartao-site', 'cartao-versoes', 'cartao-lixeira', 'cartao-ajuda']);
+    const link = page.locator('#cartao-diagnostico');
+    await expect(link).toHaveText('Para o técnico');
+    expect(await page.locator('.cartoes #cartao-diagnostico').count()).toBe(0);
+    const caixa = await link.boundingBox();
+    expect(caixa.height).toBeGreaterThanOrEqual(44);
+    const ultimo = await page.locator('#cartao-ajuda').boundingBox();
+    expect(caixa.y).toBeGreaterThan(ultimo.y);
+  });
+
   test('V7: sem mudanças o botão diz "Nada para salvar" com contraste de pelo menos 4,5:1', async ({ page }) => {
     await entrar(page);
     await page.click('#cartao-resultados');

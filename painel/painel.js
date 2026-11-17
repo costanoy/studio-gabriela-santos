@@ -234,7 +234,13 @@
     }
     raiz.appendChild(h('p', { class: 'dica', text: 'O que você quer fazer?' }));
     var grade = h('div', { class: 'cartoes' });
-    CARTOES.forEach(function (c) {
+    // Ordem fixa: Antes e depois, Textos, (outros de conteúdo), Ver o site, Versões, Lixeira, Ajuda
+    var ORDEM = ['cartao-resultados', 'cartao-textos', 'cartao-site', 'cartao-versoes', 'cartao-lixeira', 'cartao-ajuda'];
+    function pos(c) { var i = ORDEM.indexOf(c.id); return i < 0 ? 2.5 : i; }
+    CARTOES.map(function (c, i) { return { c: c, i: i }; })
+      .sort(function (x, y) { return (pos(x.c) - pos(y.c)) || (x.i - y.i); })
+      .map(function (x) { return x.c; })
+      .forEach(function (c) {
       var el = c.href
         ? h('a', { class: 'cartao', href: c.href, target: c.alvo || null, rel: c.alvo ? 'noopener' : null })
         : h('button', { class: 'cartao', type: 'button', on: { click: c.ir } });
@@ -245,6 +251,8 @@
       grade.appendChild(el);
     });
     raiz.appendChild(grade);
+    raiz.appendChild(h('p', { class: 'rodape-tecnico' },
+      h('button', { class: 'link-pequeno', type: 'button', id: 'cartao-diagnostico', text: 'Para o técnico', on: { click: function () { ir('diagnostico'); } } })));
   };
 
   function sair() {
@@ -1550,7 +1558,6 @@
       caixa.appendChild(lista);
     });
   };
-  CARTOES.push({ id: 'cartao-diagnostico', icone: '🔧', titulo: 'Diagnóstico', texto: 'Para o Vinicius: confere o endereço de acesso', ir: function () { ir('diagnostico'); } });
 
   /*@@TELAS*/
 

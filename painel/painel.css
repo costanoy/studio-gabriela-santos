@@ -119,6 +119,8 @@ body.login { min-height: 100vh; display: flex; align-items: center; justify-cont
 .cartao .cartao-titulo { font-size: 18px; font-weight: 800; color: var(--marrom); }
 .cartao .cartao-texto { font-size: 14px; color: var(--suave); }
 .cartao:active { background: var(--areia); }
+.rodape-tecnico { text-align: center; margin: 24px 0 8px; }
+.link-pequeno { font: inherit; font-size: 14px; color: var(--suave); background: none; border: 0; text-decoration: underline; min-height: 44px; min-width: 44px; padding: 0 16px; cursor: pointer; }
 @media (max-width: 380px) { .cartoes { grid-template-columns: 1fr; } }
 
 .painel-caixa { background: var(--branco); border: 2px solid var(--areia); border-radius: 18px; padding: 14px 16px; margin: 0 0 14px; }
