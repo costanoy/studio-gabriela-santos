@@ -106,13 +106,13 @@ a { color: inherit; }
 
 /* Vídeo */
 .video-moldura { position: relative; width: 78%; max-width: 300px; isolation: isolate; }
-.video-moldura::before { content: ''; position: absolute; inset: 0; z-index: -1; transform: translate(-10px, -10px); border: 1px solid var(--champanhe); border-radius: 4px; }
+.video-moldura::before { content: ''; position: absolute; inset: -12px; z-index: -1; border: 1px solid var(--champanhe); border-radius: 4px; }
 .video-moldura video { width: 100%; height: auto; aspect-ratio: 576 / 1024; object-fit: cover; border-radius: 4px; background: var(--cafe-escuro); }
 .video-play { position: absolute; top: 50%; left: 50%; width: 72px; height: 72px; margin: -36px 0 0 -36px; border-radius: 50%; border: 1px solid var(--creme); background: rgba(42,29,23,.55); padding: 0 0 0 4px; display: flex; align-items: center; justify-content: center; cursor: pointer; transition: transform .2s ease, background-color .2s ease; }
 .video-play:hover { transform: scale(1.06); background: rgba(42,29,23,.75); }
 .video-play[hidden] { display: none; }
 .video-play:focus-visible { outline: 2px solid var(--creme); outline-offset: 3px; }
-@media (min-width: 901px) { .video-moldura::before { transform: translate(-12px, -12px); } }
+@media (min-width: 901px) { .video-moldura::before { inset: -14px; } }
 
 /* Comparador antes/depois */
 .ba { position: relative; width: 100%; aspect-ratio: 3 / 4; border-radius: 4px; overflow: hidden; background: var(--cafe-escuro); touch-action: pan-y; cursor: ew-resize; user-select: none; -webkit-user-select: none; }
