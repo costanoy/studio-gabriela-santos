@@ -32,14 +32,17 @@ if ($pagina === 'home'): ?>
   </header>
   </div>
 <?php else: ?>
-<div style="font-family: 'Mulish', sans-serif; color: #3A2A22; background: #FBF3EE;">
+<div class="pagina">
 
-  <header id="site-header" style="position: sticky; top: 0; z-index: 50; background-color: #3A2A22F0; background-image: linear-gradient(135deg, #3A2A22, #5C4A40); backdrop-filter: blur(8px); border-bottom: 1px solid #5C4A40; display:grid; grid-template-columns: 1fr auto 1fr; align-items:center; padding: 14px 5%;">
-    <div></div>
-    <a href="index.html" style="position:relative; justify-self:center; grid-column:2; display:block;">
-      <img id="logo-full" src="<?= e(url_midia($logo_texto['arquivo'])) ?>" alt="<?= e($logo_texto['alt']) ?>" style="height: 100px; width: auto; display:block; opacity:1;">
-      <img id="logo-gs" src="<?= e(url_midia($logo_icone['arquivo'])) ?>" alt="" aria-hidden="true" style="height: 100px; width: auto; position:absolute; left:50%; top:0; transform:translateX(-50%); opacity:0;">
-    </a>
-    <a id="rc-back-link" href="index.html" style="position:absolute; right:5%; top:50%; transform:translateY(-50%); text-decoration:none; color:#F3E4DA; font-weight:700; font-size:14.5px; display:flex; align-items:center; gap:8px;">Voltar</a>
+  <div class="cab-wrap">
+  <header id="site-header" class="cab scrolled cab-res">
+    <div class="cab-int">
+      <a href="index.html" class="cab-logo" id="site-logo-wrap">
+        <img id="logo-full" src="<?= e(url_midia($logo_texto['arquivo'])) ?>" alt="<?= e($logo_texto['alt']) ?>" width="1920" height="1080">
+        <img id="logo-gs" src="<?= e(url_midia($logo_icone['arquivo'])) ?>" alt="" aria-hidden="true" width="<?= (int) $logo_icone['largura'] ?>" height="<?= (int) $logo_icone['altura'] ?>">
+      </a>
+      <a id="rc-back-link" class="btn-texto btn-texto-claro cab-voltar" href="index.html"><svg width="22" height="12" viewBox="0 0 22 12" fill="none" aria-hidden="true"><path d="M21 6H1M6 1L1 6l5 5" stroke="currentColor" stroke-width="1.3" stroke-linecap="round" stroke-linejoin="round"></path></svg><span class="t">Voltar</span></a>
+    </div>
   </header>
+  </div>
 <?php endif; ?>

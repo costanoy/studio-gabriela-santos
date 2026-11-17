@@ -128,7 +128,7 @@ parcial('estilo-home');
         <div id="resultados-grid">
 <?php foreach (resultados_home($c) as $item): ?>
           <figure style="margin:0;">
-<?php parcial('comparador', ['item' => $item, 'novo' => true]); ?>
+<?php parcial('comparador', ['item' => $item]); ?>
             <figcaption class="res-legenda"><?= e($item['titulo']) ?></figcaption>
           </figure>
 <?php endforeach; ?>

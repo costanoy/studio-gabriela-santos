@@ -1,13 +1,5 @@
 <?php defined('RAIZ') || exit; ?>
 <script>
-let __scrolled = false;
-window.addEventListener('scroll', function () {
-  const y = window.scrollY;
-  if (!__scrolled && y > 80) __scrolled = true;
-  else if (__scrolled && y < 20) __scrolled = false;
-  else return;
-  document.getElementById('site-header').classList.toggle('scrolled', __scrolled);
-}, { passive: true });
 function tocarVideo(btn) {
   const v = btn.parentElement.querySelector('video');
   if (v) v.play();
@@ -56,4 +48,13 @@ function baSlide(input) {
     document.addEventListener(n, function () { ativo = null; });
   });
 })();
+const revealObserver = new IntersectionObserver((entries) => {
+  entries.forEach((entry) => {
+    if (entry.isIntersecting) {
+      entry.target.classList.add('visible');
+      revealObserver.unobserve(entry.target);
+    }
+  });
+}, { threshold: 0.12 });
+document.querySelectorAll('.reveal').forEach((el) => revealObserver.observe(el));
 </script>
