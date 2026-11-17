@@ -18,6 +18,8 @@ if (($_SERVER['REQUEST_METHOD'] ?? '') !== 'POST') {
 sessao_iniciar();
 exigir_login_api();
 csrf_verificar();
+// A sessão só é lida daqui para frente: solta a trava para que um envio longo não segure as outras telas
+session_write_close();
 
 // Se a memória acabar no meio de uma foto, ainda devolve JSON em vez de uma página de erro
 register_shutdown_function(static function (): void {

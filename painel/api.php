@@ -111,7 +111,7 @@ switch ($acao) {
             'cabecalho' => $cab,
             'valor_cabecalho' => $cab ? (string) ($_SERVER[$cab] ?? '') : '',
             'proxies_confiaveis' => array_values($cfg['proxies_confiaveis']),
-            'remoto_e_proxy_confiavel' => in_array((string) ($_SERVER['REMOTE_ADDR'] ?? ''), $cfg['proxies_confiaveis'], true),
+            'remoto_e_proxy_confiavel' => ip_em_lista((string) ($_SERVER['REMOTE_ADDR'] ?? ''), $cfg['proxies_confiaveis']),
             'ambiente' => (string) $cfg['ambiente'],
         ]);
 

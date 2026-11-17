@@ -25,6 +25,8 @@ function seg_agora(): int
     return (int) ($GLOBALS['__nucleo_teste']['agora'] ?? time());
 }
 
+const SESSAO_MAXIMO_SEGUNDOS = 43200; // 12 horas
+
 function sessao_nome(): string
 {
     return config()['cookie_secure'] ? '__Host-sgs' : 'sgs';
@@ -65,6 +67,11 @@ function sessao_iniciar(): void
         $_SESSION = [];
         session_regenerate_id(true);
     }
+    // Tempo máximo absoluto: mesmo usando sem parar, a sessão acaba 12 horas depois da entrada
+    if (!empty($_SESSION['logado']) && isset($_SESSION['inicio']) && $agora - (int) $_SESSION['inicio'] > SESSAO_MAXIMO_SEGUNDOS) {
+        $_SESSION = [];
+        session_regenerate_id(true);
+    }
     if (!empty($_SESSION['logado'])) {
         $_SESSION['ultimo'] = $agora;
     }
@@ -80,19 +87,21 @@ function sessao_logada(): bool
 function sessao_entrar(string $senha): array
 {
     sessao_iniciar();
-    $ip = ip_cliente();
-    if (!tentativas_ok($ip)) {
-        return ['ok' => false, 'erro' => 'bloqueado', 'espera_min' => tentativas_espera_min($ip)];
+    $ip = tentativas_chave(ip_cliente());
+    // Confere e registra a tentativa na MESMA trava, antes de testar a senha:
+    // pedidos ao mesmo tempo não conseguem passar do limite. Se a senha estiver certa, a marca sai logo depois.
+    $r = tentativas_reservar($ip);
+    if (!$r['ok']) {
+        return ['ok' => false, 'erro' => 'bloqueado', 'espera_min' => $r['espera_min']];
     }
     $hash = (string) config()['senha_hash'];
     if ($hash === '' || !password_verify($senha, $hash)) {
-        tentativas_registrar($ip);
         return ['ok' => false, 'erro' => 'senha'];
     }
     tentativas_limpar($ip);
     // ID novo no login: um ID roubado antes do login não vale depois dele
     session_regenerate_id(true);
-    $_SESSION = ['logado' => true, 'ultimo' => seg_agora()];
+    $_SESSION = ['logado' => true, 'ultimo' => seg_agora(), 'inicio' => seg_agora()];
     return ['ok' => true];
 }
 
@@ -183,6 +192,48 @@ const TENTATIVAS_MAX = 5;
 const TENTATIVAS_JANELA = 900; // 15 minutos
 
 /**
+ * true se o IP está na lista. Cada item pode ser um IP exato ("10.0.0.1") ou uma faixa CIDR ("10.0.0.0/8", "2001:db8::/32").
+ */
+function ip_em_lista(string $ip, array $lista): bool
+{
+    $bin = @inet_pton($ip);
+    if ($bin === false) {
+        return false;
+    }
+    foreach ($lista as $item) {
+        $item = trim((string) $item);
+        if ($item === '') {
+            continue;
+        }
+        if (strpos($item, '/') === false) {
+            if ($item === $ip || (@inet_pton($item) !== false && @inet_pton($item) === $bin)) {
+                return true;
+            }
+            continue;
+        }
+        [$base, $bits] = explode('/', $item, 2);
+        $b = @inet_pton($base);
+        if ($b === false || strlen($b) !== strlen($bin) || !ctype_digit($bits) || (int) $bits > strlen($b) * 8) {
+            continue;
+        }
+        $bits = (int) $bits;
+        $bytes = intdiv($bits, 8);
+        if ($bytes > 0 && substr($bin, 0, $bytes) !== substr($b, 0, $bytes)) {
+            continue;
+        }
+        $resto = $bits % 8;
+        if ($resto === 0) {
+            return true;
+        }
+        $mascara = (0xFF << (8 - $resto)) & 0xFF;
+        if ((ord($bin[$bytes]) & $mascara) === (ord($b[$bytes]) & $mascara)) {
+            return true;
+        }
+    }
+    return false;
+}
+
+/**
  * IP de quem fez o pedido. O cabeçalho de proxy (ex.: X-Forwarded-For) só vale quando o pedido
  * veio de um proxy listado em proxies_confiaveis; senão qualquer um poderia inventar o próprio IP.
  */
@@ -191,12 +242,12 @@ function ip_cliente(): string
     $cfg = config();
     $remoto = (string) ($_SERVER['REMOTE_ADDR'] ?? '');
     $cab = $cfg['ip_cabecalho'] ?? null;
-    if ($cab && in_array($remoto, $cfg['proxies_confiaveis'], true)) {
+    if ($cab && ip_em_lista($remoto, $cfg['proxies_confiaveis'])) {
         $valor = (string) ($_SERVER[$cab] ?? '');
         // da direita para a esquerda: o primeiro endereço que não é proxy confiável
         $lista = array_reverse(array_map('trim', explode(',', $valor)));
         foreach ($lista as $ip) {
-            if (filter_var($ip, FILTER_VALIDATE_IP) && !in_array($ip, $cfg['proxies_confiaveis'], true)) {
+            if (filter_var($ip, FILTER_VALIDATE_IP) && !ip_em_lista($ip, $cfg['proxies_confiaveis'])) {
                 return $ip;
             }
         }
@@ -241,6 +292,47 @@ function tentativas_mexer(callable $f): array
     flock($h, LOCK_UN);
     fclose($h);
     return $dados;
+}
+
+/**
+ * Chave de contagem das tentativas. IPv4 vale por inteiro; IPv6 vale pela rede /64
+ * (quem recebe um /64 inteiro troca de endereço à vontade, então contar o endereço não adianta).
+ */
+function tentativas_chave(string $ip): string
+{
+    $bin = filter_var($ip, FILTER_VALIDATE_IP, FILTER_FLAG_IPV6) ? @inet_pton($ip) : false;
+    if ($bin === false || strlen($bin) !== 16) {
+        return $ip;
+    }
+    // IPv4 escrito como IPv6 (::ffff:a.b.c.d) conta como o IPv4
+    if (substr($bin, 0, 12) === "\0\0\0\0\0\0\0\0\0\0\xff\xff") {
+        return (string) inet_ntop(substr($bin, 12));
+    }
+    return bin2hex(substr($bin, 0, 8)) . '::/64';
+}
+
+/**
+ * Confere e já registra uma tentativa, tudo dentro da mesma trava do arquivo.
+ * @return array{ok:bool,espera_min:int}
+ */
+function tentativas_reservar(string $chave): array
+{
+    $bloqueado = false;
+    $dados = tentativas_mexer(static function ($d) use ($chave, &$bloqueado) {
+        if (count($d[$chave] ?? []) >= TENTATIVAS_MAX) {
+            $bloqueado = true;
+            return $d;
+        }
+        $d[$chave][] = seg_agora();
+        return $d;
+    });
+    if (!$bloqueado) {
+        return ['ok' => true, 'espera_min' => 0];
+    }
+    $horas = $dados[$chave] ?? [];
+    sort($horas);
+    $libera = (int) $horas[count($horas) - TENTATIVAS_MAX] + TENTATIVAS_JANELA;
+    return ['ok' => false, 'espera_min' => max(1, (int) ceil(($libera - seg_agora()) / 60))];
 }
 
 /** true se este IP ainda pode tentar entrar (menos de 5 erros nos últimos 15 minutos). */

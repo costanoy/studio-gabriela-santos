@@ -78,7 +78,7 @@ if (($_SERVER['REQUEST_METHOD'] ?? '') === 'POST') {
             $min = (int) ($r['espera_min'] ?? 15);
             $mensagem_login = 'Muitas tentativas. Espere ' . $min . ' ' . ($min === 1 ? 'minuto' : 'minutos') . ' ou fale com o Vinicius.';
         } else {
-            $ja = count(tentativas_mexer(static fn($d) => $d)[ip_cliente()] ?? []);
+            $ja = count(tentativas_mexer(static fn($d) => $d)[tentativas_chave(ip_cliente())] ?? []);
             $restam = max(0, TENTATIVAS_MAX - $ja);
             $mensagem_login = $restam > 0
                 ? 'Senha incorreta. Você ainda pode tentar ' . $restam . ($restam === 1 ? ' vez.' : ' vezes.')

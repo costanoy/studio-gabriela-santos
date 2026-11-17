@@ -74,7 +74,7 @@ $conteudo = "<?php\n// Gerado por ferramentas/criar-senha.php. Suba para a pasta
     . "    'ambiente' => 'producao',\n"
     . "    'cookie_secure' => true,\n"
     . "    'ip_cabecalho' => null,          // na Hostinger com CDN: 'HTTP_X_FORWARDED_FOR' (veja o diagnóstico do painel)\n"
-    . "    'proxies_confiaveis' => [],      // IPs ou faixas (CIDR) do proxy\n"
+    . "    'proxies_confiaveis' => [],      // IPs ou faixas CIDR do proxy, ex.: 10.0.0.0/8\n"
     . "    'sessao_minutos' => 120,\n"
     . "];\n";
 gravar_seguro($raiz . '/publicar/painel-config.php', $conteudo);

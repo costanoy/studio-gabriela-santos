@@ -220,6 +220,70 @@ t(strpos((string) file_get_contents($tmp . '/tentativas.json'), '203.0.113.50') 
 unset($_SERVER['REMOTE_ADDR'], $_SERVER['HTTP_X_FORWARDED_FOR']);
 config_definir(null);
 
+echo "\nP2-4 / P2-5 / P2-10 tentativas, CIDR e sessão\n";
+config_definir($cfg_teste);
+$GLOBALS['__nucleo_teste'] = ['sem_exit' => true, 'agora' => 8000000];
+@unlink($tmp . '/tentativas.json');
+$_SERVER['REMOTE_ADDR'] = '203.0.113.90';
+for ($i = 0; $i < 5; $i++) {
+    t(tentativas_reservar('x')['ok'] === true, 'reservar tentativa ' . ($i + 1) . ' passa');
+}
+$rr = tentativas_reservar('x');
+t($rr['ok'] === false && $rr['espera_min'] >= 1, 'a 6ª reserva é recusada com tempo de espera');
+t(count(json_decode((string) file_get_contents($tmp . '/tentativas.json'), true)['x']) === 5, 'a recusa não registra tentativa a mais');
+@unlink($tmp . '/tentativas.json');
+t(tentativas_chave('2001:db8:1:2::1') === tentativas_chave('2001:db8:1:2:ffff:eeee:dddd:cccc'), 'IPv6 do mesmo /64 conta junto');
+t(tentativas_chave('2001:db8:1:3::1') !== tentativas_chave('2001:db8:1:2::1'), 'IPv6 de outro /64 conta separado');
+t(tentativas_chave('203.0.113.9') === '203.0.113.9' && tentativas_chave('::ffff:203.0.113.9') === '203.0.113.9', 'IPv4 conta pelo endereço inteiro');
+for ($i = 1; $i <= 5; $i++) {
+    $_SERVER['REMOTE_ADDR'] = '2001:db8:1:2::' . dechex($i);
+    sessao_entrar('errada');
+}
+$_SERVER['REMOTE_ADDR'] = '2001:db8:1:2:abcd::77';
+$r = sessao_entrar($senha_teste);
+t($r['ok'] === false && $r['erro'] === 'bloqueado', 'trocar de endereço dentro do mesmo /64 não zera o limite');
+$_SERVER['REMOTE_ADDR'] = '2001:db8:1:9::1';
+t(sessao_entrar($senha_teste)['ok'] === true, 'outra rede IPv6 não é afetada');
+sessao_sair();
+
+t(ip_em_lista('10.1.2.3', ['10.0.0.0/8']) && !ip_em_lista('11.0.0.1', ['10.0.0.0/8']), 'CIDR /8 de IPv4');
+t(ip_em_lista('192.168.1.130', ['192.168.1.128/25']) && !ip_em_lista('192.168.1.5', ['192.168.1.128/25']), 'CIDR /25 (bits no meio do byte)');
+t(ip_em_lista('2001:db8::1', ['2001:db8::/32']) && !ip_em_lista('2001:db9::1', ['2001:db8::/32']), 'CIDR de IPv6');
+t(ip_em_lista('10.0.0.1', ['10.0.0.1']) && !ip_em_lista('10.0.0.2', ['10.0.0.1']), 'IP exato continua valendo');
+t(!ip_em_lista('10.0.0.1', ['10.0.0.0/33', 'lixo/8', '10.0.0.0/x', '']), 'item inválido na lista é ignorado');
+$cfg_cidr = array_merge($cfg_teste, ['ip_cabecalho' => 'HTTP_X_FORWARDED_FOR', 'proxies_confiaveis' => ['10.0.0.0/24']]);
+config_definir($cfg_cidr);
+$_SERVER['REMOTE_ADDR'] = '10.0.0.77';
+$_SERVER['HTTP_X_FORWARDED_FOR'] = '198.51.100.7, 10.0.0.5';
+t(ip_cliente() === '198.51.100.7', 'proxy dentro da faixa CIDR é confiável e é pulado na lista');
+$_SERVER['REMOTE_ADDR'] = '10.0.1.77';
+t(ip_cliente() === '10.0.1.77', 'fora da faixa CIDR o cabeçalho é ignorado');
+unset($_SERVER['REMOTE_ADDR'], $_SERVER['HTTP_X_FORWARDED_FOR']);
+
+// P2-10: tempo máximo absoluto de 12 horas
+config_definir($cfg_teste);
+$_SERVER['REMOTE_ADDR'] = '203.0.113.91';
+$GLOBALS['__nucleo_teste']['agora'] = 9500000;
+sessao_entrar($senha_teste);
+$idsess = session_id();
+t(($_SESSION['inicio'] ?? 0) === 9500000, 'o login marca a hora de início da sessão');
+// uso a cada 2 horas menos um minuto (a cada visita a sessão renova o prazo de inatividade)
+for ($passo = 1; $passo <= 6; $passo++) {
+    session_write_close();
+    session_id($idsess);
+    $GLOBALS['__nucleo_teste']['agora'] = 9500000 + $passo * 7140;
+    sessao_iniciar();
+}
+t(sessao_logada(), 'com menos de 12 horas e uso recente a sessão continua');
+session_write_close();
+session_id($idsess);
+$GLOBALS['__nucleo_teste']['agora'] = 9500000 + 43201;
+sessao_iniciar();
+t(!sessao_logada(), 'passadas 12 horas a sessão acaba, mesmo com uso recente');
+sessao_sair();
+unset($_SERVER['REMOTE_ADDR']);
+config_definir(null);
+
 echo "\nT11 CSRF, CSP e escape\n";
 config_definir($cfg_teste);
 $GLOBALS['__nucleo_teste'] = ['sem_exit' => true, 'agora' => 7000000];
