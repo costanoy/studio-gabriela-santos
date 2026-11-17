@@ -312,14 +312,14 @@ test.describe('resultados.html', () => {
     expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(true);
   });
 
-  test('categoria com poucos itens fica centralizada', async ({ page }, ti) => {
+  test('categoria com poucos itens fica alinhada a esquerda', async ({ page }, ti) => {
     test.skip(isMobile(ti), 'so desktop');
     const c = page.locator('section.cat').last().locator('.cat-grade');
     await c.scrollIntoViewIfNeeded();
     const g = await c.boundingBox(); const itens = c.locator('.cat-item'); const k = await itens.count();
     const a = await itens.first().boundingBox(); const b = await itens.nth(k - 1).boundingBox();
     expect(k).toBeLessThan(3);
-    expect(Math.abs((a.x - g.x) - (g.x + g.width - (b.x + b.width)))).toBeLessThan(3);
+    expect(Math.abs(a.x - g.x)).toBeLessThan(3);
   });
 
   test('comparadores (5) mouse/toque', async ({ page }, ti) => {

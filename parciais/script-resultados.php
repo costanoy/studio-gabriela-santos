@@ -2,7 +2,7 @@
 <script>
 function tocarVideo(btn) {
   const v = btn.parentElement.querySelector('video');
-  if (v) v.play();
+  if (v) { v.controls = true; v.play(); btn.hidden = true; }
 }
 function marcarVideo(v, tocando) {
   const b = v.parentElement.querySelector('.video-play');
