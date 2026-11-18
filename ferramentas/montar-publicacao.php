@@ -18,7 +18,7 @@ $raiz = dirname(__DIR__);
 
 // Arquivos soltos que entram.
 $arquivos = [
-    'index.php', 'resultados.php', '404.php', '.htaccess', '.user.ini', 'robots.txt', 'sitemap.xml',
+    'index.php', 'resultados.php', '404.php', '.htaccess', '.user.ini', 'robots.txt', 'sitemap.php', 'favicon.ico',
     'dados/site.padrao.json', 'conteudo/.htaccess', 'conteudo/midia/.htaccess',
 ];
 

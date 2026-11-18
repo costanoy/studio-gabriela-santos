@@ -370,3 +370,48 @@ test.describe('resultados.html', () => {
     expect(Object.values(bytes).reduce((a, x) => a + x, 0)).toBeLessThan(8 * 1024 * 1024);
   });
 });
+
+test.describe('SEO tecnico', () => {
+  test('robots.txt bloqueia painel e prototipos e aponta o sitemap', async ({ request }) => {
+    const r = await request.get('/robots.txt'); expect(r.status()).toBe(200);
+    const t = await r.text();
+    expect(t).toContain('Allow: /'); expect(t).toContain('Disallow: /painel/'); expect(t).toContain('Disallow: /prototipos/');
+    expect(t).toContain('Sitemap: https://studiogabrielasantos.com.br/sitemap.xml');
+  });
+
+  test('/sitemap.xml responde 200, e XML bem formado com 2 <loc> e imagens', async ({ page, request }) => {
+    const r = await request.get('/sitemap.xml'); expect(r.status()).toBe(200);
+    expect(r.headers()['content-type']).toContain('xml');
+    const t = await r.text();
+    const ok = await page.evaluate((x) => { const d = new DOMParser().parseFromString(x, 'application/xml'); return { erro: !!d.querySelector('parsererror'), locs: d.getElementsByTagName('loc').length }; }, t);
+    expect(ok.erro).toBe(false);
+    expect(t.match(/<loc>https:\/\/studiogabrielasantos\.com\.br\/(resultados\.html)?<\/loc>/g)).toHaveLength(2);
+    expect(t).toContain('<image:loc>'); expect(t).toMatch(/<lastmod>\d{4}-\d{2}-\d{2}<\/lastmod>/);
+  });
+
+  test('JSON-LD da home e BeautySalon valido, com description e telefone +55', async ({ page }) => {
+    await page.goto('/index.html');
+    const dados = await page.$$eval('script[type="application/ld+json"]', (n) => n.map((x) => JSON.parse(x.textContent)));
+    const n = dados.find((d) => d['@type'] === 'BeautySalon'); expect(n).toBeTruthy();
+    expect(n.description.length).toBeGreaterThan(40); expect(n.telephone).toMatch(/^\+55\d{10,11}$/);
+    expect(n.address.addressCountry).toBe('BR'); expect(typeof n.geo.latitude).toBe('number');
+    expect(n.logo).toMatch(/^https:\/\/.+\/assets\/logo\.svg$/);
+    expect(new Set(n.sameAs).size).toBe(n.sameAs.length);
+    expect(n.postalCode).toBeUndefined(); expect(n.priceRange).toBeUndefined();
+  });
+
+  test('resultados tem twitter:title, twitter:description e og:image:alt', async ({ page }) => {
+    await page.goto('/resultados.html');
+    await expect(page.locator('meta[name="twitter:title"]')).toHaveAttribute('content', /Resultados/);
+    await expect(page.locator('meta[name="twitter:description"]')).toHaveAttribute('content', /.{20,}/);
+    await expect(page.locator('meta[property="og:image:alt"]')).toHaveAttribute('content', /.{5,}/);
+  });
+
+  test('icones: apple-touch-icon 180x180 e favicon.ico respondem 200', async ({ page, request }) => {
+    await page.goto('/index.html');
+    await expect(page.locator('link[rel="apple-touch-icon"]')).toHaveAttribute('href', '/assets/apple-touch-icon.png');
+    const a = await request.get('/assets/apple-touch-icon.png'); expect(a.status()).toBe(200);
+    const b = await a.body(); expect(b.readUInt32BE(16)).toBe(180); expect(b.readUInt32BE(20)).toBe(180);
+    const i = await request.get('/favicon.ico'); expect(i.status()).toBe(200);
+  });
+});

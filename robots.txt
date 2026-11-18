@@ -1,4 +1,6 @@
 User-agent: *
 Allow: /
+Disallow: /painel/
+Disallow: /prototipos/
 
 Sitemap: https://studiogabrielasantos.com.br/sitemap.xml

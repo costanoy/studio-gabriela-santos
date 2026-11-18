@@ -19,8 +19,9 @@ $og_imagem = $base . '/' . url_midia($seo['og_imagem']);
 <meta name="robots" content="index, follow, max-image-preview:large">
 <meta name="theme-color" content="#996C55">
 <link rel="canonical" href="<?= e($url) ?>">
-<link rel="icon" type="image/png" href="assets/favicon.png">
-<link rel="apple-touch-icon" href="assets/favicon.png">
+<link rel="icon" href="/favicon.ico" sizes="any">
+<link rel="icon" type="image/png" href="/assets/favicon.png">
+<link rel="apple-touch-icon" sizes="180x180" href="/assets/apple-touch-icon.png">
 <meta property="og:type" content="website">
 <meta property="og:site_name" content="Studio Gabriela Santos">
 <meta property="og:url" content="<?= e($url) ?>">
@@ -29,15 +30,12 @@ $og_imagem = $base . '/' . url_midia($seo['og_imagem']);
 <meta property="og:image" content="<?= e($og_imagem) ?>">
 <meta property="og:image:width" content="1200">
 <meta property="og:image:height" content="630">
-<?php if ($home): ?>
 <meta property="og:image:alt" content="<?= e($seo['og_imagem_alt']) ?>">
-<?php endif; ?>
 <meta property="og:locale" content="pt_BR">
 <meta name="twitter:card" content="summary_large_image">
-<?php if ($home): ?>
 <meta name="twitter:title" content="<?= e($og_titulo) ?>">
 <meta name="twitter:description" content="<?= e($og_descricao) ?>">
-<?php endif; ?>
+<meta name="twitter:image:alt" content="<?= e($seo['og_imagem_alt']) ?>">
 <meta name="twitter:image" content="<?= e($og_imagem) ?>">
 <script>document.documentElement.classList.add('js');</script>
 <script type="application/ld+json">

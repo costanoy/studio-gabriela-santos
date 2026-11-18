@@ -10,12 +10,16 @@ Options -Indexes
 <IfModule mod_rewrite.c>
 RewriteEngine On
 
-# Uma URL só por página: https, sem www
+# Uma URL só por página: https, sem www.
+# Cobre http://, http://www. e https://www. (o www em https também vira https://studiogabrielasantos.com.br)
 RewriteCond %{HTTPS} !=on
 RewriteCond %{HTTP:X-Forwarded-Proto} !=https
 RewriteRule ^ https://studiogabrielasantos.com.br%{REQUEST_URI} [R=301,L]
 RewriteCond %{HTTP_HOST} ^www\. [NC]
 RewriteRule ^ https://studiogabrielasantos.com.br%{REQUEST_URI} [R=301,L]
+
+# O sitemap é gerado do conteúdo (as fotos trocadas pelo painel entram sozinhas)
+RewriteRule ^sitemap\.xml$ sitemap.php [L]
 
 # /index.html, /index.php e /resultados.php voltam para o endereço público (301)
 RewriteCond %{THE_REQUEST} \s/index\.(html|php)[\s?] [NC]
@@ -27,7 +31,7 @@ RewriteRule ^resultados\.php$ /resultados.html [R=301,L]
 RewriteRule ^resultados\.html$ resultados.php [L]
 
 # Código, dados e ferramentas nunca saem pela web
-RewriteRule ^(nucleo|parciais|dados|ferramentas|tests|acervo|node_modules|\.auditoria|\.local|\.claude|\.git|publicar)(/|$) - [F,L]
+RewriteRule ^(nucleo|parciais|dados|ferramentas|tests|acervo|prototipos|portfolio-preview|node_modules|\.auditoria|\.local|\.claude|\.git|publicar)(/|$) - [F,L]
 RewriteRule ^(package(-lock)?\.json|playwright\.config\.js|MELHORIAS\.md|CLAUDE\.md|\.user\.ini|painel-config[^/]*\.php)$ - [F,L]
 </IfModule>
 

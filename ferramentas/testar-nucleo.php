@@ -87,7 +87,9 @@ preg_match('#<link rel="canonical" href="([^"]+)"#', renderizar('home', $padrao)
 preg_match('#<link rel="canonical" href="([^"]+)"#', renderizar('resultados', $padrao), $mr);
 t(($mh[1] ?? '') === 'https://studiogabrielasantos.com.br/', 'canonical da home é a raiz');
 t(($mr[1] ?? '') === 'https://studiogabrielasantos.com.br/resultados.html', 'canonical de resultados é /resultados.html');
-$sitemap = (string) file_get_contents(RAIZ . '/sitemap.xml');
+ob_start();
+(static function (): void { include RAIZ . '/sitemap.php'; })();
+$sitemap = (string) ob_get_clean();
 t(strpos($sitemap, '<loc>' . $mh[1] . '</loc>') !== false && strpos($sitemap, '<loc>' . $mr[1] . '</loc>') !== false, 'sitemap tem as mesmas duas URLs dos canonical');
 t(substr_count($sitemap, '<loc>') === 2, 'sitemap tem só 2 URLs');
 $htaccess = (string) file_get_contents(RAIZ . '/.htaccess');

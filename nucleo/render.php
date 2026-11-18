@@ -67,36 +67,94 @@ function url_base(array $c): string
     return rtrim((string) ($c['seo']['url_base'] ?? 'https://studiogabrielasantos.com.br'), '/');
 }
 
+/** Horário no formato schema.org ("Mo-Fr 08:00-17:00, Sa 08:00-12:00") em OpeningHoursSpecification. Vazio se não der para derivar. */
+function jsonld_horarios(string $texto): array
+{
+    $dias = ['Mo' => 'Monday', 'Tu' => 'Tuesday', 'We' => 'Wednesday', 'Th' => 'Thursday', 'Fr' => 'Friday', 'Sa' => 'Saturday', 'Su' => 'Sunday'];
+    $chaves = array_keys($dias);
+    $saida = [];
+    foreach (explode(',', $texto) as $parte) {
+        if (!preg_match('/^\s*(Mo|Tu|We|Th|Fr|Sa|Su)(?:-(Mo|Tu|We|Th|Fr|Sa|Su))?\s+(\d\d:\d\d)-(\d\d:\d\d)\s*$/', $parte, $m)) {
+            return [];
+        }
+        $ini = array_search($m[1], $chaves, true);
+        $fim = $m[2] !== '' ? array_search($m[2], $chaves, true) : $ini;
+        if ($fim < $ini) {
+            return [];
+        }
+        $lista = [];
+        for ($d = $ini; $d <= $fim; $d++) {
+            $lista[] = $dias[$chaves[$d]];
+        }
+        $saida[] = [
+            '@type' => 'OpeningHoursSpecification',
+            'dayOfWeek' => $lista,
+            'opens' => $m[3],
+            'closes' => $m[4],
+        ];
+    }
+    return $saida;
+}
+
 function jsonld_negocio(array $c): array
 {
     $base = url_base($c);
     $ct = $c['contato'];
-    return [
+    $seo = $c['seo'];
+    $endereco = [
+        '@type' => 'PostalAddress',
+        'streetAddress' => $ct['endereco_schema']['rua'],
+        'addressLocality' => $ct['endereco_schema']['cidade'],
+        'addressRegion' => $ct['endereco_schema']['uf'],
+    ];
+    if (trim((string) ($ct['cep'] ?? '')) !== '') {
+        $endereco['postalCode'] = $ct['cep'];
+    }
+    $endereco['addressCountry'] = $ct['endereco_schema']['pais'];
+
+    $perfis = ['https://instagram.com/' . $ct['instagram_usuario']];
+    foreach ((array) ($ct['perfis'] ?? []) as $url) {
+        $perfis[] = $url;
+    }
+    $vistos = [];
+    $perfis = array_values(array_filter($perfis, static function (string $u) use (&$vistos): bool {
+        $k = strtolower(rtrim(preg_replace('#^https://(www\.)?#i', '', $u), '/'));
+        if (isset($vistos[$k])) {
+            return false;
+        }
+        return $vistos[$k] = true;
+    }));
+
+    $dados = [
         '@context' => 'https://schema.org',
         '@type' => 'BeautySalon',
+        '@id' => $base . '/#negocio',
         'name' => 'Studio Gabriela Santos',
+        'description' => $seo['descricao'],
+        'url' => $base . '/',
+        'logo' => $base . '/assets/logo.svg',
         'image' => [
-            $base . '/' . url_midia($c['seo']['og_imagem']),
+            $base . '/' . url_midia($seo['og_imagem']),
             $base . '/' . url_midia($c['home']['sobre']['foto']['arquivo']),
         ],
-        'address' => [
-            '@type' => 'PostalAddress',
-            'streetAddress' => $ct['endereco_schema']['rua'],
-            'addressLocality' => $ct['endereco_schema']['cidade'],
-            'addressRegion' => $ct['endereco_schema']['uf'],
-            'addressCountry' => $ct['endereco_schema']['pais'],
-        ],
-        'telephone' => '+' . $ct['whatsapp'],
-        'openingHours' => $ct['horario_schema'],
-        'url' => $base . '/',
-        'sameAs' => ['https://instagram.com/' . $ct['instagram_usuario']],
-        '@id' => $base . '/#negocio',
-        'logo' => $base . '/assets/favicon.png',
+        'address' => $endereco,
         'geo' => ['@type' => 'GeoCoordinates', 'latitude' => $ct['geo']['lat'], 'longitude' => $ct['geo']['lng']],
-        'hasMap' => $ct['maps_link'],
-        'areaServed' => $ct['endereco_schema']['cidade'] . ', ' . $ct['endereco_schema']['uf'],
-        'founder' => ['@type' => 'Person', 'name' => 'Gabriela Santos'],
+        'telephone' => '+' . $ct['whatsapp'],
     ];
+    $horarios = jsonld_horarios((string) $ct['horario_schema']);
+    if ($horarios) {
+        $dados['openingHoursSpecification'] = $horarios;
+    } else {
+        $dados['openingHours'] = $ct['horario_schema'];
+    }
+    if (trim((string) ($seo['faixa_preco'] ?? '')) !== '') {
+        $dados['priceRange'] = $seo['faixa_preco'];
+    }
+    $dados['sameAs'] = $perfis;
+    $dados['hasMap'] = $ct['maps_link'];
+    $dados['areaServed'] = $ct['endereco_schema']['cidade'] . ', ' . $ct['endereco_schema']['uf'];
+    $dados['founder'] = ['@type' => 'Person', 'name' => 'Gabriela Santos'];
+    return $dados;
 }
 
 function jsonld_breadcrumb(): array

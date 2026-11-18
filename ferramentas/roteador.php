@@ -41,6 +41,9 @@ if ($caminho === '/' || $caminho === '/index.html') {
 if ($caminho === '/resultados.html') {
     r_executar($raiz . '/resultados.php');
 }
+if ($caminho === '/sitemap.xml') {
+    r_executar($raiz . '/sitemap.php');
+}
 if ($caminho === '/index.php') {
     header('Location: /', true, 301);
     exit;

@@ -452,6 +452,21 @@ function conteudo_validar(array $c): array
     $https($ct['maps_link'] ?? null, 'contato.maps_link', 'o link do mapa');
     $https($ct['maps_embed'] ?? null, 'contato.maps_embed', 'o mapa da página', 'https://www.google.com/maps');
     $https($ct['avaliacao_online'] ?? null, 'contato.avaliacao_online', 'o link de avaliação');
+    // Opcionais (só vão para o Google se preenchidos): CEP, outros perfis e faixa de preço.
+    $cep = $ct['cep'] ?? '';
+    if (!is_string($cep) || ($cep !== '' && preg_match('/^\d{5}-\d{3}$/', $cep) !== 1)) {
+        $erro('contato.cep', 'O CEP precisa estar no formato 00000-000.');
+    }
+    $perfis = $ct['perfis'] ?? [];
+    if ($limite_lista($perfis, 'contato.perfis', 10, 'perfis')) {
+        foreach ($perfis as $n => $url) {
+            $https($url, "contato.perfis.$n", 'o perfil');
+        }
+    }
+    $faixa = $c['seo']['faixa_preco'] ?? '';
+    if (!is_string($faixa) || mb_strlen($faixa) > 20 || $faixa !== strip_tags($faixa)) {
+        $erro('seo.faixa_preco', 'A faixa de preço aceita até 20 letras (exemplo: $$ ou R$ 80 a R$ 300).');
+    }
 
     $seo = $c['seo'] ?? [];
     foreach (['titulo', 'titulo_resultados', 'og_titulo', 'og_titulo_resultados', 'og_imagem_alt'] as $k) {

@@ -28,7 +28,9 @@
         },
         "maps_link": "https://maps.app.goo.gl/SFJzFnDdAkket245A",
         "maps_embed": "https://www.google.com/maps?q=-15.332350,-49.133907&output=embed",
-        "avaliacao_online": "https://forms.gle/nkKaVqY9BxyV5XVPA"
+        "avaliacao_online": "https://forms.gle/nkKaVqY9BxyV5XVPA",
+        "cep": "",
+        "perfis": []
     },
     "seo": {
         "titulo": "Studio Gabriela Santos — Estética Corporal e Facial em Goianésia, GO",
@@ -41,7 +43,8 @@
         "og_titulo_resultados": "Resultados Antes e Depois — Studio Gabriela Santos",
         "og_descricao_resultados": "Resultados reais de Liposhape, drenagem linfática, limpeza de pele e mais em Goianésia-GO.",
         "og_imagem": "assets/og-image.jpg",
-        "url_base": "https://studiogabrielasantos.com.br"
+        "url_base": "https://studiogabrielasantos.com.br",
+        "faixa_preco": ""
     },
     "marca": {
         "logo_texto": {
