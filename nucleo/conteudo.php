@@ -260,6 +260,7 @@ function conteudo_validar(array $c): array
 
     // Início
     $h = $c['home'] ?? [];
+    if (isset($h['hero']['chamada'])) $texto($h['hero']['chamada'], 'home.hero.chamada', LIMITE_TITULO, 'A frase acima do título do topo', false);
     $texto($h['hero']['titulo'] ?? null, 'home.hero.titulo', LIMITE_TITULO, 'O título do topo');
     $texto($h['hero']['texto'] ?? null, 'home.hero.texto', LIMITE_PARAGRAFO, 'O texto do topo');
     $midia($h['hero']['imagem']['arquivo'] ?? null, 'home.hero.imagem.arquivo', 'a imagem do topo');

@@ -7,6 +7,7 @@ parcial('estilo-base');
 .hero { position: relative; background: var(--degrade); overflow: hidden; min-height: max(86svh, 600px); display: flex; align-items: center; justify-content: center; text-align: center; }
 .hero-int { position: relative; z-index: 1; width: 100%; padding: 104px var(--margem) 64px; }
 .marca-dagua { position: absolute; left: 50%; top: 40%; z-index: 0; width: 130vw; max-width: none; height: auto; transform: translate(-50%, -50%); opacity: .2; pointer-events: none; -webkit-mask-image: radial-gradient(closest-side, #000 40%, transparent 80%); mask-image: radial-gradient(closest-side, #000 40%, transparent 80%); }
+.hero-chamada { display: block; margin-bottom: 18px; font: 700 12px/1.4 var(--sem-serifa); letter-spacing: .18em; text-transform: uppercase; color: var(--areia); }
 .hero h1 { font-size: 52px; line-height: 1; letter-spacing: -.015em; color: var(--creme); }
 .hero-apoio { margin: 20px auto 0; max-width: 30ch; font-size: 17px; line-height: 1.6; color: var(--areia); }
 .hero-acoes { margin-top: 32px; display: flex; flex-direction: column; gap: 12px; }

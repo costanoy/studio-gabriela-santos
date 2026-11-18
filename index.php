@@ -35,7 +35,8 @@ parcial('estilo-home');
     <img class="marca-dagua" id="hero-bg-img" src="<?= e(url_midia($hero['imagem']['arquivo'])) ?>" alt="" aria-hidden="true" width="<?= (int) $hero['imagem']['largura'] ?>" height="<?= (int) $hero['imagem']['altura'] ?>" fetchpriority="high">
     <div class="hero-int" id="hero-content">
       <div class="hero-texto">
-        <h1><?= e($hero['titulo']) ?></h1>
+        <?php $chamada = (string) ($hero['chamada'] ?? 'Estética corporal e facial em Goianésia'); ?>
+        <h1><?php if ($chamada !== ''): ?><span class="hero-chamada"><?= e($chamada) ?></span> <?php endif; ?><?= e($hero['titulo']) ?></h1>
         <p class="hero-apoio"><?= e($hero['texto']) ?></p>
         <div class="hero-acoes">
           <a class="btn btn-claro" href="<?= e($wa) ?>" target="_blank" rel="noopener"><?= e($hero['botao_principal']) ?></a>
